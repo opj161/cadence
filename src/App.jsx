@@ -9,9 +9,9 @@ import './App.css';
 const DEBUG_APP = false; // Keep false for production
 
 function App() {
-  const [lineCounts, setLineCounts] = useState([]);
-  const [gutterPositions, setGutterPositions] = useState({});
-  const [activeLinePos, setActiveLinePos] = useState(null); // State for active paragraph position
+  // REMOVED: const [lineCounts, setLineCounts] = useState([]);
+  // REMOVED: const [gutterPositions, setGutterPositions] = useState({});
+  // REMOVED: const [activeLinePos, setActiveLinePos] = useState(null);
   const editorWrapperRef = useRef(null);
   const processingCounter = useRef(0);
   const editorRef = useRef(null);
@@ -125,11 +125,13 @@ function App() {
     if (DEBUG_APP) {
       console.log(`[ProcessText Run #${currentRun}] Finished processing. Found ${newLineCounts.length} paragraphs, ${newDecorationPoints.length} decoration points. Calculation errors: ${pointErrors}.`);
     }
-    setLineCounts(newLineCounts);
+    // REMOVED: setLineCounts(newLineCounts);
+
+    // Send both points and counts to the plugin via meta
     if (editorInstance && !editorInstance.isDestroyed) {
-      if (DEBUG_APP) console.log(`[ProcessText Run #${currentRun}] Dispatching transaction with ${newDecorationPoints.length} points.`);
+      if (DEBUG_APP) console.log(`[ProcessText Run #${currentRun}] Dispatching transaction with ${newDecorationPoints.length} points and ${newLineCounts.length} counts.`);
       const tr = editorInstance.state.tr;
-      tr.setMeta(SyllableVisualizerPluginKey, newDecorationPoints);
+      tr.setMeta(SyllableVisualizerPluginKey, { points: newDecorationPoints, counts: newLineCounts });
       if (editorInstance.view && !editorInstance.view.isDestroyed) {
         editorInstance.view.dispatch(tr);
       }
@@ -161,7 +163,16 @@ function App() {
         currentDepth--;
     }
     // if (DEBUG_APP) console.log("[Selection Update] Active Paragraph Pos:", activePos);
-    setActiveLinePos(activePos); // Update state for highlighting the gutter count
+    // REMOVED: setActiveLinePos(activePos);
+
+    // Send active position to the plugin via meta
+    if (updatedEditor && !updatedEditor.isDestroyed) {
+        const tr = updatedEditor.state.tr;
+        tr.setMeta(SyllableVisualizerPluginKey, { activePos: activePos });
+        if (updatedEditor.view && !updatedEditor.view.isDestroyed) {
+            updatedEditor.view.dispatch(tr);
+        }
+    }
   }, []);
 
   // REMOVED: const debouncedSelectionUpdate = useRef(debounce(handleSelectionUpdate, 150)).current;

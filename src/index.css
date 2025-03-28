@@ -107,51 +107,10 @@ h1 {
   border: 1px solid var(--border-color); /* Etwas stärkerer Rahmen als subtle */
   border-radius: 10px; /* Weichere Rundung */
   transition: border-color 0.2s ease;
-  overflow: hidden;
+  overflow: visible; /* Allow absolutely positioned widgets to overflow */
 }
 
-/* Gutter Styling */
-.gutter {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 45px; /* Etwas schmaler */
-  height: 100%;
-  background-color: var(--bg-secondary);
-  border-right: 1px solid var(--border-color); /* Passend zum Außenrahmen */
-  box-sizing: border-box;
-  padding-top: 15px; /* An Editor-Padding anpassen */
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-  border-top-left-radius: 9px; /* Innenrundung anpassen */
-  border-bottom-left-radius: 9px;
-}
-
-/* Styling for individual count numbers */
-.gutter-count {
-  position: absolute;
-  right: 7px; /* Angepasst für schmaleren Gutter */
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  line-height: 1.65; /* An Editor anpassen */
-  user-select: none;
-  text-align: right;
-  opacity: 0.6; /* Standardmäßig noch subtiler */
-  transition: top 0.05s linear, opacity 0.2s ease, color 0.2s ease, font-weight 0.2s ease;
-}
-.gutter-count:hover {
-  opacity: 1;
-  color: var(--text-accent-hover); /* Hover-Akzentfarbe */
-  cursor: default;
-}
-/* Hervorhebung für die aktive Zeile */
-.gutter-count.active-count {
-  opacity: 1;
-  color: var(--gutter-active-color); /* Akzentfarbe verwenden */
-  font-weight: 600; /* Leicht fetter */
-}
+/* REMOVED: Old Gutter Styling */
 
 
 /* Editor Content Wrapper */
@@ -185,11 +144,18 @@ h1 {
 
 .ProseMirror p {
   margin: 0 0 1em 0;
+  position: relative; /* Needed for absolute positioning of gutter widgets */
 }
 
 .ProseMirror p:last-child {
   margin-bottom: 0;
 }
+
+/* --- New Gutter Widget Styling (Rendered by Plugin) --- */
+/* The widget itself is styled via inline styles in SyllableVisualizer.js */
+/* We only need the active state color here potentially, but it's also handled inline */
+/* .pm-gutter-widget.active-count { ... } */
+
 
 /* --- Syllable Hyphen Styling (Final) --- */
 .syllable-hyphen {
