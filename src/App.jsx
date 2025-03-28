@@ -9,9 +9,9 @@ import debounce from 'lodash.debounce';
 const DEBUG_APP = false; // Keep false for production
 
 function App() {
-  // REMOVED: const [lineCounts, setLineCounts] = useState([]);
-  // REMOVED: const [gutterPositions, setGutterPositions] = useState({});
-  // REMOVED: const [activeLinePos, setActiveLinePos] = useState(null);
+  const [lineCounts, setLineCounts] = useState([]); // State for counts [{ nodePos: number, count: number }]
+  const [gutterData, setGutterData] = useState([]); // State for counts with positions [{ nodePos: number, count: number, top: number }]
+  const [activeLinePos, setActiveLinePos] = useState(null); // State for active line start position
   const editorWrapperRef = useRef(null);
   const processingCounter = useRef(0);
   const editorRef = useRef(null);
@@ -125,13 +125,15 @@ function App() {
     if (DEBUG_APP) {
       console.log(`[ProcessText Run #${currentRun}] Finished processing. Found ${newLineCounts.length} paragraphs, ${newDecorationPoints.length} decoration points. Calculation errors: ${pointErrors}.`);
     }
-    // REMOVED: setLineCounts(newLineCounts);
 
-    // Send both points and counts to the plugin via meta
+    // --- Update State and Plugin ---
+    setLineCounts(newLineCounts); // Update React state for gutter rendering
+
     if (editorInstance && !editorInstance.isDestroyed) {
-      if (DEBUG_APP) console.log(`[ProcessText Run #${currentRun}] Dispatching transaction with ${newDecorationPoints.length} points and ${newLineCounts.length} counts.`);
+      if (DEBUG_APP) console.log(`[ProcessText Run #${currentRun}] Dispatching transaction with ${newDecorationPoints.length} points.`);
       const tr = editorInstance.state.tr;
-      tr.setMeta(SyllableVisualizerPluginKey, { points: newDecorationPoints, counts: newLineCounts });
+      // ONLY send points to the plugin
+      tr.setMeta(SyllableVisualizerPluginKey, { points: newDecorationPoints });
       if (editorInstance.view && !editorInstance.view.isDestroyed) {
         editorInstance.view.dispatch(tr);
       }
@@ -162,20 +164,66 @@ function App() {
         if (node.type.name === 'doc') break;
         currentDepth--;
     }
-    // if (DEBUG_APP) console.log("[Selection Update] Active Paragraph Pos:", activePos);
-    // REMOVED: setActiveLinePos(activePos);
+    // if (DEBUG_APP) console.log("[Selection Update] Active Paragraph Pos:", currentActivePos);
 
-    // Send active position to the plugin via meta
+    // Update React state
+    setActiveLinePos(currentActivePos);
+
+    // NO LONGER sending activePos via meta to the plugin
+    /*
     if (updatedEditor && !updatedEditor.isDestroyed) {
         const tr = updatedEditor.state.tr;
-        tr.setMeta(SyllableVisualizerPluginKey, { activePos: activePos });
+        tr.setMeta(SyllableVisualizerPluginKey, { activePos: currentActivePos });
         if (updatedEditor.view && !updatedEditor.view.isDestroyed) {
             updatedEditor.view.dispatch(tr);
         }
     }
-  }, []);
+    */
+  }, []); // Keep dependency array empty
 
-  // REMOVED: const debouncedSelectionUpdate = useRef(debounce(handleSelectionUpdate, 150)).current;
+  // --- Gutter Alignment Logic ---
+  useEffect(() => {
+    const editorInstance = editorRef.current;
+    const wrapper = editorWrapperRef.current;
+    if (!editorInstance || !editorInstance.view || !wrapper || lineCounts.length === 0) {
+      setGutterData([]); // Clear data if editor/counts not ready
+      return;
+    }
+
+    const view = editorInstance.view;
+    const newGutterData = [];
+    const wrapperRect = wrapper.getBoundingClientRect(); // Get wrapper position once
+
+    lineCounts.forEach(line => {
+      try {
+        // nodePos is the start of the content (pos + 1)
+        // We need the node's start position (pos) to get the DOM node
+        const nodePos = line.nodePos - 1;
+        if (nodePos < 0) throw new Error("Invalid nodePos");
+
+        const node = view.nodeDOM(nodePos);
+        if (node instanceof HTMLElement) {
+          const nodeRect = node.getBoundingClientRect();
+          // Calculate top relative to the wrapper, considering scroll position
+          const top = nodeRect.top - wrapperRect.top + wrapper.scrollTop;
+          newGutterData.push({ ...line, top });
+        } else {
+           if (DEBUG_APP) console.warn(`[Gutter Position] Could not find DOM node for pos ${nodePos}`);
+        }
+      } catch (error) {
+        // This can happen if the node is not currently rendered (e.g., due to virtualization or error)
+        if (DEBUG_APP) console.warn(`[Gutter Position] Error getting node DOM/position for pos ${line.nodePos - 1}:`, error);
+      }
+    });
+
+    if (DEBUG_APP) console.log("[Gutter Position] Calculated gutter data:", newGutterData);
+    setGutterData(newGutterData);
+
+  // Rerun when line counts change OR when the editor content potentially reflows (doc version)
+  // Note: Depending solely on doc version might be too frequent.
+  // A more optimized approach might involve debouncing this effect or using ResizeObserver
+  // on the editor wrapper, but this is a simpler starting point.
+  }, [lineCounts, editor?.state.doc.version]); // Add editor?.state.doc.version to dependencies
 
   // --- Editor Setup ---
   const editor = useEditor({
@@ -205,12 +253,10 @@ function App() {
      onDestroy: () => {
        if (DEBUG_APP) console.log("[Editor onDestroy] Cancelling debounced calls.");
        debouncedProcessText.cancel();
-       // REMOVED: debouncedSelectionUpdate.cancel();
+       // No longer need to cancel debouncedSelectionUpdate
        editorRef.current = null;
      }
   });
-
- // REMOVED: Gutter Alignment Logic useEffect
 
   return (
     <div className="app-container">
@@ -224,9 +270,21 @@ function App() {
        </p>
        {DEBUG_APP && <p style={{color: 'orange', textAlign: 'center'}}><b>[Debug-Modus Aktiv]</b> - Überprüfen Sie die Browser-Konsole für Details.</p>}
 
-       {/* REMOVED: Separate gutter div */}
        <div className="editor-layout-tiptap">
-         {/* The gutter widgets are now rendered inside ProseMirror */}
+         {/* NEW: Dedicated Gutter Div */}
+         <div className="editor-gutter">
+           {gutterData.map((line) => (
+             <span
+               key={line.nodePos}
+               className={`gutter-line-count ${line.nodePos === activeLinePos ? 'active-count' : ''}`}
+               style={{ top: `${line.top}px` }} // Position based on calculated top offset
+             >
+               [{line.count}]
+             </span>
+           ))}
+         </div>
+
+         {/* Editor Content Wrapper */}
          <div className="editor-content-wrapper" ref={editorWrapperRef}>
              <EditorContent editor={editor} />
          </div>

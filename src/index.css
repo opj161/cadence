@@ -103,7 +103,7 @@ h1 {
 .editor-layout-tiptap {
   position: relative;
   display: flex;
-  padding-left: 50px; /* Angepasste Gutter-Breite */
+  /* REMOVED padding-left: 50px; */
   border: 1px solid var(--border-color); /* Etwas stärkerer Rahmen als subtle */
   border-radius: 10px; /* Weichere Rundung */
   transition: border-color 0.2s ease;
@@ -141,29 +141,49 @@ h1 {
 
 .ProseMirror p {
   margin: 0 0 1em 0;
-  position: relative; /* Needed for absolute positioning of gutter widgets */
+  position: relative;
 }
 
 .ProseMirror p:last-child {
   margin-bottom: 0;
 }
 
-/* --- New Gutter Widget Styling (Rendered by Plugin) --- */
-.pm-gutter-widget {
+/* NEW: Gutter Container */
+.editor-gutter {
+  flex-shrink: 0; /* Prevent shrinking */
+  width: 45px; /* Fixed width for the gutter */
+  position: relative; /* For absolute positioning of counts */
+  background-color: var(--bg-secondary); /* Match body background or choose another */
+  border-right: 1px solid var(--border-color-subtle);
+  border-top-left-radius: 9px; /* Match outer container */
+  border-bottom-left-radius: 9px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  padding-top: 15px; /* Align with ProseMirror padding */
+  box-sizing: border-box;
+}
+
+/* NEW: Individual Gutter Count Element */
+.gutter-line-count {
   position: absolute;
-  left: -45px; /* Adjust as needed based on desired gutter width */
-  top: 0; /* Aligns with the start of the line */
-  width: 35px; /* Adjust as needed */
+  right: 5px; /* Position from the right edge of the gutter */
+  width: 35px; /* Width of the count element itself */
   text-align: right;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
   font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.6;
   user-select: none;
-  pointer-events: none; /* Prevent interaction with the widget itself */
-  line-height: inherit; /* Inherit line-height from paragraph */
+  pointer-events: none;
+  line-height: 1.65; /* Match ProseMirror line-height */
   transition: opacity 0.2s ease, color 0.2s ease, font-weight 0.2s ease;
 }
 
-/* Active state color, font-weight, and opacity are handled inline in SyllableVisualizer.js */
+.gutter-line-count.active-count {
+  color: var(--gutter-active-color);
+  font-weight: 600;
+  opacity: 1;
+}
+
 
 /* --- Syllable Hyphen Styling (Final) --- */
 .syllable-hyphen {
@@ -217,10 +237,18 @@ h1 {
   h1 { font-size: 1.6rem; }
   .hinweis { font-size: 0.85em; margin-bottom: 25px;}
   .editor-layout-tiptap {
-     padding-left: 40px; /* Adjust padding if needed after removing gutter div */
+     /* padding-left: 40px; /* Adjust padding if needed after removing gutter div */ */
      border-radius: 6px;
   }
-  /* Removed .gutter and .gutter-count rules */
+  .editor-gutter {
+    width: 35px; /* Smaller gutter on mobile */
+    padding-top: 10px;
+  }
+  .gutter-line-count {
+    width: 30px;
+    right: 2px;
+    font-size: 10px;
+  }
   .ProseMirror {
     padding: 10px 15px;
     min-height: 40vh; /* Höhe reduziert sich stärker */
