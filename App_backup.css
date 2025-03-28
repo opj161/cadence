@@ -1,0 +1,255 @@
+/* --- CSS Variablen für Light & Dark Mode --- */
+:root {
+  /* Light Mode (Standard) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-editor: #ffffff;
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --text-accent: #0d6efd;
+  --border-color: #dee2e6;
+  --border-color-subtle: #e9ecef;
+  --shadow-color-rgb: 0, 0, 0;
+  --focus-ring-color: rgba(13, 110, 253, 0.25);
+  --syllable-hyphen-color: #adb5bd;
+  --scrollbar-thumb: #ced4da;
+  --scrollbar-track: var(--bg-secondary);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark Mode */
+    --bg-primary: #212529;
+    --bg-secondary: #343a40;
+    --bg-editor: #2b2f33;
+    --text-primary: #e9ecef;
+    --text-secondary: #adb5bd;
+    --text-accent: #4dabf7;
+    --border-color: #495057;
+    --border-color-subtle: #3f454a;
+    --shadow-color-rgb: 222, 226, 230;
+    --focus-ring-color: rgba(77, 171, 247, 0.35);
+    --syllable-hyphen-color:rgb(253, 170, 53);
+    --scrollbar-thumb: #495057;
+    --scrollbar-track: var(--bg-secondary);
+  }
+}
+
+/* --- Globale Styles & Typografie --- */
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app-container {
+  max-width: 900px;
+  margin: 30px auto;
+  background-color: var(--bg-primary);
+  padding: 35px 45px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(var(--shadow-color-rgb), 0.07);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* --- Header mit Logo --- */
+.app-header {
+  display: flex;
+  flex-direction: column; /* Logo über dem Titel */
+  align-items: center;
+  margin-bottom: 0px; /* Abstand zum Hinweistext */
+}
+
+.app-logo {
+  height: 350px; /* Höhe des Logos anpassen */
+  width: auto;
+  margin-bottom: 8px; /* Kleiner Abstand zum Titel */
+  /* Filter für Dark Mode, falls SVG keine transparenten/neutralen Farben hat */
+  /* @media (prefers-color-scheme: dark) {
+    filter: invert(1) brightness(1.5); // Beispiel: Invertieren und aufhellen
+  } */
+}
+
+h1 {
+  text-align: center;
+  color: var(--text-primary);
+  margin: 0; /* Standard-Margin entfernen, Abstand über .app-header */
+  font-weight: 700;
+  font-size: 2.2rem; /* Etwas größer für den App-Namen */
+}
+/* --- Ende Header --- */
+
+
+.hinweis {
+  text-align: center;
+  font-size: 0.95em;
+  color: var(--text-secondary);
+  margin-bottom: 35px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* --- Tiptap Editor Layout mit Gutter --- */
+.editor-layout-tiptap {
+  position: relative;
+  display: flex;
+  padding-left: 55px;
+  border: 1px solid var(--border-color-subtle);
+  border-radius: 8px;
+  /* margin-top: 20px; */ /* Entfernt, Abstand wird durch Header/Hinweis geregelt */
+  transition: border-color 0.2s ease;
+  overflow: hidden;
+}
+
+/* Gutter Styling */
+.gutter {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 50px;
+  height: 100%;
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border-color-subtle);
+  box-sizing: border-box;
+  padding-top: 10px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Styling for individual count numbers */
+.gutter-count {
+  position: absolute;
+  right: 8px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  line-height: 1.6;
+  user-select: none;
+  text-align: right;
+  opacity: 0.7;
+  transition: top 0.05s linear, opacity 0.2s ease, color 0.2s ease;
+}
+.gutter-count:hover {
+  opacity: 1;
+  color: var(--text-accent);
+  cursor: default;
+}
+
+/* Editor Content Wrapper */
+.editor-content-wrapper {
+  flex-grow: 1;
+  background-color: var(--bg-editor);
+  border-top-right-radius: 7px;
+  border-bottom-right-radius: 7px;
+  transition: background-color 0.2s ease;
+  overflow-y: auto;
+  max-height: 70vh;
+}
+
+/* --- Tiptap/ProseMirror Editor Styling --- */
+.ProseMirror {
+  padding: 15px 25px;
+  min-height: 350px;
+  outline: none;
+  line-height: 1.6;
+  color: var(--text-primary);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  -webkit-font-variant-ligatures: none;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0;
+  position: relative;
+  flex-grow: 1;
+  caret-color: var(--text-accent);
+  transition: color 0.2s ease;
+}
+
+.ProseMirror p {
+  margin: 0 0 0.8em 0;
+}
+
+.ProseMirror p:last-child {
+  margin-bottom: 0;
+}
+
+/* --- Syllable Hyphen Styling (Final) --- */
+.syllable-hyphen {
+  color: var(--syllable-hyphen-color);
+  user-select: none;
+  pointer-events: none;
+  vertical-align: baseline;
+  /* opacity: 0.8; */ /* Optional */
+}
+
+/* --- Tiptap Focus State --- */
+.ProseMirror:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 3px;
+  outline: none;
+}
+.ProseMirror:focus {
+  outline: none; /* Fallback für ältere Browser */
+}
+
+/* --- Custom Scrollbar Styling (Webkit only) --- */
+.editor-content-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+.editor-content-wrapper::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 4px;
+}
+.editor-content-wrapper::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 4px;
+  border: 2px solid var(--scrollbar-track);
+}
+.editor-content-wrapper::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-secondary);
+}
+
+/* --- Responsiveness --- */
+@media (max-width: 768px) {
+  body { padding: 15px; }
+  .app-container { padding: 25px 30px; margin: 20px auto; }
+  h1 { font-size: 1.8rem; }
+}
+
+@media (max-width: 600px) {
+  body { padding: 10px; }
+  .app-container { padding: 20px 20px; margin: 10px; border-radius: 8px; }
+  .app-header { margin-bottom: 15px; }
+  .app-logo { height: 40px; }
+  h1 { font-size: 1.6rem; }
+  .hinweis { font-size: 0.85em; margin-bottom: 25px;}
+  .editor-layout-tiptap {
+     padding-left: 45px;
+     border-radius: 6px;
+  }
+  .gutter {
+    width: 40px;
+    padding-top: 10px;
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+  }
+  .gutter-count {
+    font-size: 10px;
+    right: 6px;
+  }
+  .ProseMirror {
+    padding: 10px 15px;
+    min-height: 300px;
+  }
+  .editor-content-wrapper {
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+  }
+}
