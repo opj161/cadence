@@ -149,8 +149,22 @@ h1 {
 }
 
 /* --- New Gutter Widget Styling (Rendered by Plugin) --- */
-/* The widget itself is styled via inline styles in SyllableVisualizer.js */
-/* We only need the active state color here potentially, but it's also handled inline */
+.pm-gutter-widget {
+  position: absolute;
+  left: -45px; /* Adjust as needed based on desired gutter width */
+  top: 0; /* Aligns with the start of the line */
+  width: 35px; /* Adjust as needed */
+  text-align: right;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  font-size: 11px;
+  user-select: none;
+  pointer-events: none; /* Prevent interaction with the widget itself */
+  line-height: inherit; /* Inherit line-height from paragraph */
+  transition: opacity 0.2s ease, color 0.2s ease, font-weight 0.2s ease;
+}
+
+/* Active state color, font-weight, and opacity are handled inline in SyllableVisualizer.js */
+
 /* --- Syllable Hyphen Styling (Final) --- */
 .syllable-hyphen {
   color: var(--syllable-hyphen-color);

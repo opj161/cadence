@@ -23,22 +23,11 @@ const createGutterDecorations = (doc, lineCounts, activePos) => {
         span.className = `pm-gutter-widget ${isActive ? 'active-count' : ''}`;
         span.textContent = `[${line.count}]`;
         span.setAttribute('data-line-pos', line.nodePos.toString()); // For potential future use/debugging
-        span.style.cssText = `
-          position: absolute;
-          left: -45px; /* Adjust as needed based on desired gutter width */
-          top: 0; /* Aligns with the start of the line */
-          width: 35px; /* Adjust as needed */
-          text-align: right;
-          font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-          font-size: 11px;
-          font-weight: ${isActive ? '600' : '500'};
-          color: var(--${isActive ? 'gutter-active-color' : 'text-secondary'});
-          opacity: ${isActive ? '1' : '0.6'};
-          user-select: none;
-          pointer-events: none; /* Prevent interaction with the widget itself */
-          line-height: inherit; /* Inherit line-height from paragraph */
-          transition: opacity 0.2s ease, color 0.2s ease, font-weight 0.2s ease;
-        `;
+        // Keep dynamic styles inline
+        span.style.fontWeight = isActive ? '600' : '500';
+        span.style.color = `var(--${isActive ? 'gutter-active-color' : 'text-secondary'})`;
+        span.style.opacity = isActive ? '1' : '0.6';
+        // Static styles moved to index.css
         return span;
       },
       { side: -1, ignoreSelection: true } // Place before the paragraph content
