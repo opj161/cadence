@@ -210,68 +210,7 @@ function App() {
      }
   });
 
- // --- Gutter Alignment Logic ---
- useEffect(() => {
-     const calculateGutterPositions = () => {
-         const editorInstance = editorRef.current;
-         const wrapperElement = editorWrapperRef.current;
-         if (!editorInstance?.view?.dom || !wrapperElement) {
-             if (DEBUG_APP) console.log("[Gutter Calc] Skipping: Editor/View/Wrapper not ready.");
-             return;
-         }
-         if (DEBUG_APP) console.log("[Gutter Calc] Recalculating positions using DOM query...");
-         const newPositions = {};
-         const editorWrapperRect = wrapperElement.getBoundingClientRect();
-         const editorView = editorInstance.view;
-         const paragraphDOMElements = wrapperElement.querySelectorAll('.ProseMirror > p');
-
-         if (DEBUG_APP) console.log(`[Gutter Calc] Found ${paragraphDOMElements.length} <p> elements in DOM.`);
-
-         paragraphDOMElements.forEach((pElement) => {
-            let pos = -1;
-            try {
-                 pos = editorView.posAtDOM(pElement, 0);
-            } catch (err) {
-                 console.error(`[Gutter Calc] Error getting posAtDOM for element:`, pElement, err);
-                 return;
-            }
-            if (pos !== -1) {
-                 const lineData = lineCounts.find(lc => lc.nodePos === pos);
-                 if (lineData) {
-                     const nodeRect = pElement.getBoundingClientRect();
-                     // Calculate top relative to the wrapper, adding scroll offset if the wrapper scrolls
-                     const scrollTop = wrapperElement.scrollTop;
-                     const relativeTop = (nodeRect.top - editorWrapperRect.top) + scrollTop;
-                     newPositions[lineData.nodePos] = relativeTop;
-                 } else {
-                      if (DEBUG_APP) console.log(`  - Gutter pos: No lineCount data found for node at DOM-derived pos ${pos}.`);
-                 }
-            }
-         });
-         setGutterPositions(newPositions);
-         if (DEBUG_APP) console.log("[Gutter Calc] Positions updated based on DOM query:", Object.keys(newPositions).length > 0 ? newPositions : '{}');
-     };
-
-     const debouncedCalculatePositions = debounce(calculateGutterPositions, 100);
-     calculateGutterPositions();
-     // Listen also on scroll *within* the editor wrapper if it's the scrolling element
-     const scrollableElement = editorWrapperRef.current;
-     if (scrollableElement) {
-         scrollableElement.addEventListener('scroll', debouncedCalculatePositions);
-     }
-     window.addEventListener('resize', debouncedCalculatePositions);
-
-     return () => {
-        if (DEBUG_APP) console.log("[Gutter Calc] Cleaning up listeners.");
-        debouncedCalculatePositions.cancel();
-        if (scrollableElement) {
-            scrollableElement.removeEventListener('scroll', debouncedCalculatePositions);
-        }
-        window.removeEventListener('resize', debouncedCalculatePositions);
-     };
-     // Rerun when lineCounts change or editor ref becomes available
- }, [lineCounts, editorRef.current]); // Depend on editorRef.current to ensure editor is ready
-
+ // REMOVED: Gutter Alignment Logic useEffect
 
   return (
     <div className="app-container">
@@ -285,25 +224,9 @@ function App() {
        </p>
        {DEBUG_APP && <p style={{color: 'orange', textAlign: 'center'}}><b>[Debug-Modus Aktiv]</b> - Überprüfen Sie die Browser-Konsole für Details.</p>}
 
+       {/* REMOVED: Separate gutter div */}
        <div className="editor-layout-tiptap">
-         <div className="gutter">
-            {lineCounts.map(line => {
-               // Determine if this line count corresponds to the active paragraph
-               const isActive = line.nodePos === activeLinePos;
-               const className = `gutter-count ${isActive ? 'active-count' : ''}`;
-
-               return gutterPositions[line.nodePos] !== undefined && (
-                 <div
-                     key={`count-${line.nodePos}`}
-                     className={className} // Apply conditional class
-                     style={{ top: `${gutterPositions[line.nodePos]}px` }}
-                 >
-                     [{line.count}]
-                 </div>
-               );
-             })}
-         </div>
-         {/* IMPORTANT: The ref goes on the scrollable container */}
+         {/* The gutter widgets are now rendered inside ProseMirror */}
          <div className="editor-content-wrapper" ref={editorWrapperRef}>
              <EditorContent editor={editor} />
          </div>
