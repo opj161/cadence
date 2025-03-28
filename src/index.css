@@ -103,7 +103,6 @@ h1 {
 .editor-layout-tiptap {
   position: relative;
   display: flex;
-  /* REMOVED padding-left: 50px; */
   border: 1px solid var(--border-color); /* Etwas stärkerer Rahmen als subtle */
   border-radius: 10px; /* Weichere Rundung */
   transition: border-color 0.2s ease;
@@ -183,7 +182,6 @@ h1 {
   font-weight: 600;
   opacity: 1;
 }
-
 
 /* --- Syllable Hyphen Styling (Final) --- */
 .syllable-hyphen {

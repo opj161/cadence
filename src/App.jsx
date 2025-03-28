@@ -223,10 +223,10 @@ function App() {
   // Note: Depending solely on doc version might be too frequent.
   // A more optimized approach might involve debouncing this effect or using ResizeObserver
   // on the editor wrapper, but this is a simpler starting point.
-  }, [lineCounts, editor?.state.doc.version]); // Add editor?.state.doc.version to dependencies
+  }, [lineCounts, editor?.state.doc.version]); // Dependency on editor is now safe
 
-  // --- Editor Setup ---
-  const editor = useEditor({
+  // --- Editor Setup --- (MOVED UP)
+  const editor = useEditor({ // Now editor is initialized before the useEffect above
     extensions: [
       StarterKit.configure({ history: true, gapcursor: true }),
       SyllableVisualizer.configure(),
@@ -257,6 +257,7 @@ function App() {
        editorRef.current = null;
      }
   });
+
 
   return (
     <div className="app-container">

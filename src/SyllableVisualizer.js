@@ -55,9 +55,6 @@ export const SyllableVisualizer = Extension.create({
                 if (DEBUG_SYLLABLE_VISUALIZER) console.log('[SyllableVisualizer Plugin] Init State.');
                 return {
                     hyphenDecorations: DecorationSet.empty,
-                    // REMOVED: gutterDecorations
-                    // REMOVED: lineCounts
-                    // REMOVED: activePos
                     docVersion: state.doc.version,
                     hyphenPoints: [], // Keep points if needed for mapping
                 };
@@ -65,30 +62,26 @@ export const SyllableVisualizer = Extension.create({
             apply: (tr, currentPluginState, oldEditorState, newEditorState) => {
                 const meta = tr.getMeta(SyllableVisualizerPluginKey);
                 let newState = { ...currentPluginState };
-                // REMOVED: let needsGutterUpdate = false;
                 let needsHyphenUpdate = false;
 
-                // Check for new data from processText
+                // Check for new hyphen points data from processText
                 if (meta) {
                     if (meta.points !== undefined) {
                         if (DEBUG_SYLLABLE_VISUALIZER) console.log(`[SyllableVisualizer Plugin] Apply: Received ${meta.points.length} hyphen points via meta.`);
                         newState.hyphenPoints = meta.points;
                         needsHyphenUpdate = true;
                     }
-                    // REMOVED: Handling for counts and activePos
                 }
 
-                // Update decorations if necessary
+                // Update hyphen decorations if necessary
                 if (needsHyphenUpdate) {
                     newState.hyphenDecorations = createHyphenDecorations(newEditorState.doc, newState.hyphenPoints || []);
                 }
-                // REMOVED: Gutter decoration update
 
-                // Map existing decorations if the document changed but no new data was provided
+                // Map existing hyphen decorations if the document changed but no new data was provided
                 if (tr.docChanged && !meta) {
-                    if (DEBUG_SYLLABLE_VISUALIZER) console.log('[SyllableVisualizer Plugin] Apply: Document changed, mapping old decorations.');
+                    if (DEBUG_SYLLABLE_VISUALIZER) console.log('[SyllableVisualizer Plugin] Apply: Document changed, mapping old hyphen decorations.');
                     newState.hyphenDecorations = currentPluginState.hyphenDecorations.map(tr.mapping, newEditorState.doc);
-                    // REMOVED: Gutter decoration mapping
                 }
 
                 // Update doc version tracking
@@ -100,11 +93,12 @@ export const SyllableVisualizer = Extension.create({
         props: {
           decorations(state) {
             const pluginState = this.getState(state);
-            if (!pluginState) return null;
-
-            // ONLY return hyphen decorations
+            if (!pluginState) {
+              return null;
+            }
+            // Only return hyphen decorations
             if (DEBUG_SYLLABLE_VISUALIZER && pluginState.hyphenDecorations.find().length > 0) {
-                 console.log(`[SyllableVisualizer Plugin] Decorations func: Returning Set with ${pluginState.hyphenDecorations.find().length} hyphen decorations.`);
+              console.log(`[SyllableVisualizer Plugin] Decorations func: Returning Set with ${pluginState.hyphenDecorations.find().length} hyphen decorations.`);
             }
             return pluginState.hyphenDecorations;
           },
