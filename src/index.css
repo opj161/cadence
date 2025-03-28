@@ -237,7 +237,7 @@ h1 {
   h1 { font-size: 1.6rem; }
   .hinweis { font-size: 0.85em; margin-bottom: 25px;}
   .editor-layout-tiptap {
-     /* padding-left: 40px; /* Adjust padding if needed after removing gutter div */ */
+     /* padding-left: 40px; /* Adjust padding if needed after removing gutter div */
      border-radius: 6px;
   }
   .editor-gutter {
