@@ -1,0 +1,4 @@
+.aider*
+.vite*
+node_modules*
+.venv*
