@@ -25,70 +25,102 @@ function App() {
     processingCounter.current += 1;
     const currentRun = processingCounter.current;
     if (DEBUG_APP) console.log(`[ProcessText Run #${currentRun}] Starting processing...`);
+
     const { state } = editorInstance;
     const { doc } = state;
     const newDecorationPoints = [];
     const newLineCounts = [];
     let pointErrors = 0;
+    const wordCache = new Map(); // Cache for hyphenation results { cleanWord: { positions: [], count: X } }
 
+    // --- Pass 1: Hyphenate unique words, build cache, and calculate decoration points ---
     doc.descendants((node, pos) => {
-      if (node.type.name === 'paragraph') {
-        let paragraphSyllableCount = 0;
-        let paragraphText = node.textContent;
-        const paragraphNodePos = pos;
-        const words = paragraphText.trim().split(/\s+/);
-        words.forEach(word => {
-          if (!word) return;
-          const cleanWordMatch = word.match(/^(.*?)([.,!?;:]*)$/);
-          const cleanWord = cleanWordMatch ? cleanWordMatch[1] : word;
-          if (!cleanWord) return;
-          try {
-            const hyphenated = hyphenateSync(cleanWord, { hyphenChar: '\u00AD', minWordLength: 3 });
-            const count = (hyphenated.match(/\u00AD/g) || []).length + 1;
-            paragraphSyllableCount += count;
-          } catch (_e) { // eslint-disable-line no-unused-vars
-            console.warn(`[ProcessText Run #${currentRun}] Hyphenation/count error on word "${cleanWord}" in paragraph at pos ${paragraphNodePos}:`, _e);
-            paragraphSyllableCount += 1;
-          }
-        });
-        newLineCounts.push({ nodePos: paragraphNodePos + 1, count: paragraphSyllableCount });
-      }
       if (node.isText && node.text) {
-        const nodeStartPos = pos + 1;
+        const nodeStartPos = pos + 1; // Position after the node's opening tag
         let currentWordStartIndex = 0;
+
+        // Split by whitespace but keep delimiters to maintain original spacing offsets
         node.text.split(/(\s+)/).forEach((segment) => {
           if (!segment || /^\s+$/.test(segment)) {
+            // It's whitespace, just advance the index
             currentWordStartIndex += segment.length;
             return;
           }
+
           const word = segment;
-          const wordStartPosInNode = currentWordStartIndex;
-          try {
-            const cleanWordMatch = word.match(/^(.*?)([.,!?;:]*)$/);
-            const cleanWord = cleanWordMatch ? cleanWordMatch[1] : word;
-            if (cleanWord && cleanWord.length >= 3) {
-              const hyphenated = hyphenateSync(cleanWord, { hyphenChar: '\u00AD', minWordLength: 3 });
-              let localOffset = 0;
-              for (let i = 0; i < hyphenated.length; i++) {
-                if (hyphenated[i] === '\u00AD') {
-                  const absolutePos = nodeStartPos + wordStartPosInNode + localOffset;
-                  if (absolutePos <= 0 || absolutePos > doc.content.size) {
-                    pointErrors++;
+          const wordStartPosInNode = currentWordStartIndex; // Start index of the word within this text node
+
+          // Basic punctuation cleaning (adjust regex as needed)
+          const cleanWordMatch = word.match(/^(.*?)([.,!?;:]*)$/);
+          const cleanWord = cleanWordMatch ? cleanWordMatch[1] : word;
+
+          if (cleanWord && cleanWord.length >= 3) { // Only process words of sufficient length
+            let hyphenationResult = wordCache.get(cleanWord);
+
+            if (!hyphenationResult) {
+              // Word not in cache, hyphenate it
+              try {
+                const hyphenated = hyphenateSync(cleanWord, { hyphenChar: '\u00AD', minWordLength: 3 });
+                const hyphenPositions = [];
+                let charIndex = 0;
+                for (let i = 0; i < hyphenated.length; i++) {
+                  if (hyphenated[i] === '\u00AD') {
+                    hyphenPositions.push(charIndex); // Store position relative to start of clean word
                   } else {
-                    newDecorationPoints.push({ pos: absolutePos, type: 'hyphen' });
+                    charIndex++;
                   }
-                } else {
-                  localOffset++;
                 }
+                const syllableCount = hyphenPositions.length + 1;
+                hyphenationResult = { positions: hyphenPositions, count: syllableCount };
+                wordCache.set(cleanWord, hyphenationResult);
+                if (DEBUG_APP) console.log(`[ProcessText Run #${currentRun}] Cached '${cleanWord}': ${syllableCount} syllables, positions: ${hyphenPositions.join(',')}`);
+              } catch (e) {
+                console.warn(`[ProcessText Run #${currentRun}] Hyphenation error on word "${cleanWord}":`, e);
+                hyphenationResult = { positions: [], count: 1 }; // Treat as 1 syllable on error
+                wordCache.set(cleanWord, hyphenationResult); // Cache error result too
+                pointErrors++;
               }
             }
-          } catch (_e) { // eslint-disable-line no-unused-vars
-            pointErrors++;
+
+            // Add decoration points based on cached/calculated positions
+            hyphenationResult.positions.forEach(relativePos => {
+              const absolutePos = nodeStartPos + wordStartPosInNode + relativePos;
+              if (absolutePos <= 0 || absolutePos > doc.content.size) {
+                 if (DEBUG_APP) console.warn(`[ProcessText Run #${currentRun}] Invalid absolutePos calculated: ${absolutePos} for word '${cleanWord}' at nodePos ${nodeStartPos}, wordStart ${wordStartPosInNode}, relativePos ${relativePos}`);
+                pointErrors++;
+              } else {
+                newDecorationPoints.push({ pos: absolutePos, type: 'hyphen' });
+              }
+            });
           }
+          // Advance index for the next segment
           currentWordStartIndex += segment.length;
         });
       }
     });
+    if (DEBUG_APP) console.log(`[ProcessText Run #${currentRun}] Pass 1 finished. Cache size: ${wordCache.size}, Decoration points: ${newDecorationPoints.length}, Point errors: ${pointErrors}`);
+
+    // --- Pass 2: Calculate paragraph syllable counts using the cache ---
+    doc.descendants((node, pos) => {
+      if (node.type.name === 'paragraph') {
+        let paragraphSyllableCount = 0;
+        const paragraphNodePos = pos; // Position of the paragraph node itself
+
+        node.textContent.trim().split(/\s+/).forEach(word => {
+          if (!word) return;
+          const cleanWordMatch = word.match(/^(.*?)([.,!?;:]*)$/);
+          const cleanWord = cleanWordMatch ? cleanWordMatch[1] : word;
+
+          if (cleanWord) {
+            const cachedResult = wordCache.get(cleanWord);
+            paragraphSyllableCount += cachedResult ? cachedResult.count : 1; // Add cached count or 1 if not found/too short
+          }
+        });
+        newLineCounts.push({ nodePos: paragraphNodePos + 1, count: paragraphSyllableCount }); // Use pos+1 for content start
+      }
+    });
+    if (DEBUG_APP) console.log(`[ProcessText Run #${currentRun}] Pass 2 finished. Calculated counts for ${newLineCounts.length} paragraphs.`);
+
 
     if (DEBUG_APP) {
       console.log(`[ProcessText Run #${currentRun}] Finished processing. Found ${newLineCounts.length} paragraphs, ${newDecorationPoints.length} decoration points. Calculation errors: ${pointErrors}.`);
@@ -104,7 +136,7 @@ function App() {
     } else {
       if (DEBUG_APP) console.log(`[ProcessText Run #${currentRun}] Editor not available for dispatching transaction.`);
     }
-  }, []);
+  }, []); // Keep useCallback dependencies empty for now
 
   const debouncedProcessText = useRef(debounce(processText, 500)).current;
 
@@ -132,7 +164,7 @@ function App() {
     setActiveLinePos(activePos); // Update state for highlighting the gutter count
   }, []);
 
-  const debouncedSelectionUpdate = useRef(debounce(handleSelectionUpdate, 150)).current; // Faster debounce for selection
+  // REMOVED: const debouncedSelectionUpdate = useRef(debounce(handleSelectionUpdate, 150)).current;
 
   // --- Editor Setup ---
   const editor = useEditor({
@@ -153,15 +185,16 @@ function App() {
       if (DEBUG_APP) console.log("[Editor onUpdate] Triggering debouncedProcessText.");
       debouncedProcessText();
     },
-    // --- Add Selection Update Handler ---
+    // --- Add Selection Update Handler (Direct Call) ---
     onSelectionUpdate: ({ editor: updatedEditor }) => {
       editorRef.current = updatedEditor; // Ensure ref is current
-      debouncedSelectionUpdate({ editor: updatedEditor });
+      // Directly call the handler without debounce
+      handleSelectionUpdate({ editor: updatedEditor });
     },
      onDestroy: () => {
        if (DEBUG_APP) console.log("[Editor onDestroy] Cancelling debounced calls.");
        debouncedProcessText.cancel();
-       debouncedSelectionUpdate.cancel(); // Cancel selection debounce too
+       // REMOVED: debouncedSelectionUpdate.cancel();
        editorRef.current = null;
      }
   });
