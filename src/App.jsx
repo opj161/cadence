@@ -4,7 +4,7 @@ import StarterKit from '@tiptap/starter-kit';
 import { SyllableVisualizer, SyllableVisualizerPluginKey } from './SyllableVisualizer';
 import { hyphenateSync } from 'hyphen/de';
 import debounce from 'lodash.debounce';
-import './App.css';
+// Removed App.css import
 
 const DEBUG_APP = false; // Keep false for production
 

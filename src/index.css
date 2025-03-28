@@ -99,7 +99,7 @@ h1 {
   line-height: 1.5;
 }
 
-/* --- Tiptap Editor Layout mit Gutter --- */
+/* --- Tiptap Editor Layout --- */
 .editor-layout-tiptap {
   position: relative;
   display: flex;
@@ -109,9 +109,6 @@ h1 {
   transition: border-color 0.2s ease;
   overflow: visible; /* Allow absolutely positioned widgets to overflow */
 }
-
-/* REMOVED: Old Gutter Styling */
-
 
 /* Editor Content Wrapper */
 .editor-content-wrapper {
@@ -154,9 +151,6 @@ h1 {
 /* --- New Gutter Widget Styling (Rendered by Plugin) --- */
 /* The widget itself is styled via inline styles in SyllableVisualizer.js */
 /* We only need the active state color here potentially, but it's also handled inline */
-/* .pm-gutter-widget.active-count { ... } */
-
-
 /* --- Syllable Hyphen Styling (Final) --- */
 .syllable-hyphen {
   color: var(--syllable-hyphen-color);
@@ -209,20 +203,10 @@ h1 {
   h1 { font-size: 1.6rem; }
   .hinweis { font-size: 0.85em; margin-bottom: 25px;}
   .editor-layout-tiptap {
-     padding-left: 40px; /* Noch schmalerer Gutter */
+     padding-left: 40px; /* Adjust padding if needed after removing gutter div */
      border-radius: 6px;
   }
-  .gutter {
-    width: 35px; /* Gutter schmaler */
-    padding-top: 10px;
-    border-top-left-radius: 5px;
-    border-bottom-left-radius: 5px;
-  }
-  .gutter-count {
-    font-size: 10px;
-    right: 5px; /* Näher an den Rand */
-    opacity: 0.65;
-  }
+  /* Removed .gutter and .gutter-count rules */
   .ProseMirror {
     padding: 10px 15px;
     min-height: 40vh; /* Höhe reduziert sich stärker */
