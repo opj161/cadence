@@ -8,11 +8,8 @@ const DEBUG_SYLLABLE_VISUALIZER = false; // Set to true for console logs from pl
 
 export const SyllableVisualizerPluginKey = new PluginKey('syllableVisualizer');
 
-// REMOVED: createGutterDecorations function
-
-// Helper to create hyphen decorations (Keep this)
+// Helper to create hyphen decorations
 const createHyphenDecorations = (doc, points) => {
-    // ... (keep existing implementation) ...
     const decorations = points.map(point => {
         if (point.type === 'hyphen') {
             if (DEBUG_SYLLABLE_VISUALIZER && (point.pos <= 0 || point.pos > doc.content.size)) {
@@ -26,7 +23,8 @@ const createHyphenDecorations = (doc, points) => {
                     const span = document.createElement('span');
                     span.className = 'syllable-hyphen';
                     span.setAttribute('data-syllable-hyphen', 'true');
-                    span.textContent = '-';
+                    // Use semantic soft hyphen for accessibility and line breaking
+                    span.textContent = '\u00AD'; // <-- TIER 1 CHANGE
                     return span;
                 },
                 { side: -1, marks: [], ignoreSelection: true }
@@ -39,12 +37,10 @@ const createHyphenDecorations = (doc, points) => {
 
 
 /**
- * Custom Tiptap Extension to visually display syllable hyphens and gutter counts.
+ * Custom Tiptap Extension to visually display syllable hyphens.
  */
 export const SyllableVisualizer = Extension.create({
   name: 'syllableVisualizer',
-
-  // No addOptions needed as points/counts come via meta
 
   addProseMirrorPlugins() {
     return [
@@ -56,7 +52,7 @@ export const SyllableVisualizer = Extension.create({
                 return {
                     hyphenDecorations: DecorationSet.empty,
                     docVersion: state.doc.version,
-                    hyphenPoints: [], // Keep points if needed for mapping
+                    hyphenPoints: [],
                 };
             },
             apply: (tr, currentPluginState, oldEditorState, newEditorState) => {
@@ -64,27 +60,20 @@ export const SyllableVisualizer = Extension.create({
                 let newState = { ...currentPluginState };
                 let needsHyphenUpdate = false;
 
-                // Check for new hyphen points data from processText
-                if (meta) {
-                    if (meta.points !== undefined) {
-                        if (DEBUG_SYLLABLE_VISUALIZER) console.log(`[SyllableVisualizer Plugin] Apply: Received ${meta.points.length} hyphen points via meta.`);
-                        newState.hyphenPoints = meta.points;
-                        needsHyphenUpdate = true;
-                    }
+                if (meta && meta.points !== undefined) {
+                    if (DEBUG_SYLLABLE_VISUALIZER) console.log(`[SyllableVisualizer Plugin] Apply: Received ${meta.points.length} hyphen points via meta.`);
+                    newState.hyphenPoints = meta.points;
+                    needsHyphenUpdate = true;
                 }
 
-                // Update hyphen decorations if necessary
                 if (needsHyphenUpdate) {
                     newState.hyphenDecorations = createHyphenDecorations(newEditorState.doc, newState.hyphenPoints || []);
                 }
-
-                // Map existing hyphen decorations if the document changed but no new data was provided
-                if (tr.docChanged && !meta) {
+                else if (tr.docChanged) {
                     if (DEBUG_SYLLABLE_VISUALIZER) console.log('[SyllableVisualizer Plugin] Apply: Document changed, mapping old hyphen decorations.');
                     newState.hyphenDecorations = currentPluginState.hyphenDecorations.map(tr.mapping, newEditorState.doc);
                 }
 
-                // Update doc version tracking
                 newState.docVersion = newEditorState.doc.version;
 
                 return newState;
@@ -96,9 +85,8 @@ export const SyllableVisualizer = Extension.create({
             if (!pluginState) {
               return null;
             }
-            // Only return hyphen decorations
             if (DEBUG_SYLLABLE_VISUALIZER && pluginState.hyphenDecorations.find().length > 0) {
-              console.log(`[SyllableVisualizer Plugin] Decorations func: Returning Set with ${pluginState.hyphenDecorations.find().length} hyphen decorations.`);
+              // console.log(`[SyllableVisualizer Plugin] Decorations func: Returning Set with ${pluginState.hyphenDecorations.find().length} hyphen decorations.`);
             }
             return pluginState.hyphenDecorations;
           },
