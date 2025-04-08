@@ -3,12 +3,13 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
+"scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "lint": "eslint .",
+  "preview": "vite preview",
+  "deploy": "wrangler pages deploy dist --project-name=cadence-app"
+},
   "dependencies": {
     "@tiptap/react": "^2.11.5",
     "@tiptap/starter-kit": "^2.11.5",
