@@ -1,3 +1,5 @@
+/* src/index.css */
+
 /* --- CSS Variablen für Light & Dark Mode --- */
 :root {
   /* Light Mode (Standard) */
@@ -12,7 +14,8 @@
   --border-color-subtle: #e9ecef;
   --shadow-color-rgb: 0, 0, 0;
   --focus-ring-color: rgba(13, 110, 253, 0.25);
-  --syllable-hyphen-color: #adb5bd; /* Color for soft hyphen visualization if needed, currently invisible */
+  /* Define the color for the visible hyphen */
+  --syllable-hyphen-color:rgb(255, 217, 0);
   --scrollbar-thumb: #ced4da;
   --scrollbar-track: var(--bg-secondary);
   --gutter-active-color: var(--text-accent); /* Farbe für aktive Gutter-Zahl */
@@ -34,7 +37,8 @@
     --border-color-subtle: #3b4046; /* Subtiler */
     --shadow-color-rgb: 200, 200, 200; /* Heller Schatten RGB */
     --focus-ring-color: rgba(97, 175, 239, 0.3);
-    --syllable-hyphen-color: #6c757d;
+    /* Update dark mode hyphen color if needed */
+    --syllable-hyphen-color:rgb(255, 183, 0);
     --scrollbar-thumb: #525861;
     --scrollbar-track: var(--bg-secondary);
     --gutter-active-color: var(--text-accent);
@@ -191,16 +195,27 @@ h1 {
   opacity: 0.8;
 }
 
-
-/* Syllable Hyphen Styling (Soft Hyphen - might be invisible) */
+/* --- Syllable Hyphen Styling (VISIBLE) --- */
 .syllable-hyphen {
-  /* color: var(--syllable-hyphen-color); */ /* Soft hyphens are usually invisible */
+  /* The span itself is now empty and non-interactive */
   user-select: none;
   pointer-events: none;
-  /* If you want a VISUAL representation even with soft hyphen, use pseudo-elements: */
-  /* position: relative; */
-  /* &::after { content: '-'; position: absolute; color: var(--syllable-hyphen-color); opacity: 0.5; } */
+  /* position: relative; */ /* Not needed for static ::after */
 }
+
+.syllable-hyphen::after {
+  content: '-'; /* Ensure this is the character you want */
+  position: static !important; /* Keep it in the text flow */
+  color: var(--syllable-hyphen-color);
+  opacity: 0.5; /* Or 1.0 for testing */
+  pointer-events: none;
+  user-select: none;
+  /* Add minor adjustments if needed for visual alignment */
+  /* display: inline-block; */ /* Might help stabilize layout */
+  /* vertical-align: baseline; */ /* Or middle, etc. */
+}
+/* --- End Syllable Hyphen Styling --- */
+
 
 /* Tiptap Focus State */
 .ProseMirror:focus-visible {
@@ -298,6 +313,5 @@ body::-webkit-scrollbar-thumb:hover {
   .editor-content-wrapper {
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
-    /* max-height: none; /* Already correctly set for mobile */
   }
 }

@@ -23,11 +23,15 @@ const createHyphenDecorations = (doc, points) => {
                     const span = document.createElement('span');
                     span.className = 'syllable-hyphen';
                     span.setAttribute('data-syllable-hyphen', 'true');
-                    // Use semantic soft hyphen for accessibility and line breaking
-                    span.textContent = '\u00AD'; // <-- TIER 1 CHANGE
+                    // Span is empty, visual rendering done via CSS ::after
+                    span.textContent = '';
                     return span;
                 },
-                { side: -1, marks: [], ignoreSelection: true }
+                // --- CHANGE HERE: Use side 0 (default) or remove side option ---
+                // { side: -1, marks: [], ignoreSelection: true } // Old value
+                { marks: [], ignoreSelection: true } // side: 0 is the default
+                // Or explicitly: { side: 0, marks: [], ignoreSelection: true }
+                // --- END CHANGE ---
             );
         }
         return null;
