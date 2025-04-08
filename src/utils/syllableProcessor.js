@@ -155,7 +155,7 @@ export const processTextLogic = async (
                  // paragraphSyllableCount = 1; // If using Option 1 above
              }
              // Store nodePos + 1 as before for consistency with gutter logic
-            newLineCounts.push({ nodePos: paragraphNodePos + 1, count: paragraphSyllableCount });
+             newLineCounts.push({ nodePos: paragraphNodePos, count: paragraphSyllableCount });
         }
     });
     if (DEBUG_MODE) console.log(`[ProcessTextLogic Run ${timestamp}] Pass 2 finished. Calculated counts for ${newLineCounts.length} paragraphs.`);

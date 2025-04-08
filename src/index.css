@@ -1,361 +1,445 @@
 /* src/index.css */
 
-/* --- CSS Variablen für Light & Dark Mode --- */
-:root {
-  /* Light Mode (Standard) */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-editor: #ffffff;
-  --text-primary: #212529;
-  --text-secondary: #6c757d;
-  --text-accent: #0d6efd;        /* Blau als Akzent */
-  --text-accent-hover: #0b5ed7;  /* Dunkleres Blau für Hover */
-  --border-color: #dee2e6;
-  --border-color-subtle: #e9ecef;
-  --shadow-color-rgb: 0, 0, 0;
-  --focus-ring-color: rgba(13, 110, 253, 0.25);
-  /* Define the color for the visible hyphen */
-  --syllable-hyphen-color:rgb(255, 217, 0); /* Keep your desired color */
-  --scrollbar-thumb: #ced4da;
-  --scrollbar-track: var(--bg-secondary);
-  --gutter-active-color: var(--text-accent); /* Farbe für aktive Gutter-Zahl */
-  --error-color: #dc3545; /* Bootstrap danger color for errors */
-  --warning-color: #ffc107; /* Bootstrap warning color */
-}
+/* ==========================================================================
+   Variables (Light & Dark Mode)
+   ========================================================================== */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Dark Mode */
-    --bg-primary: #282c34;
-    --bg-secondary: #212529;
-    --bg-editor: #2e3238;
-    --text-primary: #dfe1e4;
-    --text-secondary: #9ea4ac;
-    --text-accent: #61afef;
-    --text-accent-hover: #84c0f7;
-    --border-color: #4b5159;
-    --border-color-subtle: #3b4046;
-    --shadow-color-rgb: 200, 200, 200;
-    --focus-ring-color: rgba(97, 175, 239, 0.3);
-    /* Update dark mode hyphen color if needed */
-    --syllable-hyphen-color:rgb(255, 183, 0); /* Keep your desired color */
-    --scrollbar-thumb: #525861;
+   :root {
+    /* Light Mode (Standard) */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-editor: #ffffff;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --text-accent: #0d6efd;        /* Blue accent */
+    --text-accent-hover: #0b5ed7;  /* Darker blue for hover */
+    --border-color: #dee2e6;
+    --border-color-subtle: #e9ecef;
+    --shadow-color-rgb: 0, 0, 0;
+    --focus-ring-color: rgba(13, 110, 253, 0.25);
+    --syllable-hyphen-color: rgb(255, 217, 0); /* Yellowish */
+    --scrollbar-thumb: #ced4da;
     --scrollbar-track: var(--bg-secondary);
-    --gutter-active-color: var(--text-accent);
-    --error-color: #f8d7da; /* Lighter red for dark mode */
-    --warning-color: #fff3cd; /* Lighter yellow for dark mode */
+    --gutter-active-color: var(--text-accent); /* Active gutter number color */
+    --error-color: #dc3545; /* Bootstrap danger red */
+    --warning-color: #ffc107; /* Bootstrap warning yellow */
   }
-}
-
-/* --- Globale Styles & Typografie --- */
-body {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  margin: 0;
-  padding: 20px;
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  line-height: 1.65;
-  transition: background-color 0.2s ease, color 0.2s ease;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-.app-container {
-  max-width: 900px;
-  margin: 40px auto;
-  background-color: var(--bg-primary);
-  padding: 40px 50px;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(var(--shadow-color-rgb), 0.08);
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-/* --- Header mit Logo --- */
-.app-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 15px;
-}
-
-.app-logo {
-  height: 50px;
-  width: auto;
-  margin-bottom: 15px;
-}
-
-h1 {
-  text-align: center;
-  color: var(--text-primary);
-  margin: 0;
-  font-weight: 700;
-  font-size: 2rem;
-  letter-spacing: -0.5px;
-}
-/* --- Ende Header --- */
-
-
-.hinweis {
-  text-align: center;
-  font-size: 0.9em;
-  color: var(--text-secondary);
-  margin-top: 8px;
-  margin-bottom: 40px;
-  max-width: 550px;
-  margin-left: auto;
-  margin-right: auto;
-  line-height: 1.5;
-}
-
-/* --- Tiptap Editor Layout --- */
-.editor-layout-tiptap {
-  position: relative;
-  display: flex;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  transition: border-color 0.2s ease;
-}
-
-/* Editor Content Wrapper */
-.editor-content-wrapper {
-  flex-grow: 1;
-  background-color: var(--bg-editor);
-  border-top-right-radius: 9px;
-  border-bottom-right-radius: 9px;
-  transition: background-color 0.2s ease;
-  /* Height grows naturally */
-}
-
-/* --- Tiptap/ProseMirror Editor Styling --- */
-.ProseMirror {
-  padding: 15px 25px;
-  min-height: 350px;
-  outline: none;
-  line-height: 1.65;
-  color: var(--text-primary);
-  word-wrap: break-word;
-  white-space: pre-wrap;
-  -webkit-font-variant-ligatures: none;
-  font-variant-ligatures: none;
-  font-feature-settings: "liga" 0;
-  position: relative;
-  caret-color: var(--text-accent);
-  transition: color 0.2s ease;
-}
-
-.ProseMirror p {
-  margin: 0 0 1em 0;
-  position: relative;
-}
-
-.ProseMirror p:last-child {
-  margin-bottom: 0;
-}
-
-/* Gutter Container */
-.editor-gutter {
-  flex-shrink: 0;
-  width: 45px;
-  position: relative;
-  background-color: var(--bg-secondary);
-  border-right: 1px solid var(--border-color-subtle);
-  border-top-left-radius: 9px;
-  border-bottom-left-radius: 9px;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-  padding-top: 15px;
-  box-sizing: border-box;
-}
-
-/* Individual Gutter Count Element */
-.gutter-line-count {
-  position: absolute;
-  right: 5px;
-  width: 35px;
-  text-align: right;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-  font-size: 11px; /* Keep original size */
-  color: var(--text-secondary);
-  opacity: 0.6;
-  user-select: none;
-  line-height: 1.65; /* Match editor line-height */
-  transition: opacity 0.2s ease, color 0.2s ease, font-weight 0.2s ease, transform 0.1s ease; /* Added transform */
-   /* Ensure it aligns with the top of the paragraph */
-   padding-top: 0; /* Adjust if needed based on exact paragraph padding */
-   box-sizing: border-box;
-   transform-origin: top right;
-}
-
-
-.gutter-line-count.active-count {
-  color: var(--gutter-active-color);
-  font-weight: 600;
-  opacity: 1;
-  transform: scale(1.1); /* Slightly larger when active */
-}
-
-
-/* TIER 2: Gutter Error State */
-.gutter-line-count.error-count {
-  color: var(--warning-color); /* Use warning color for uncertainty */
-  font-weight: bold;
-  opacity: 0.8;
-}
-
-
-/* --- Syllable Hyphen Styling (VISIBLE) --- */
-.syllable-hyphen {
-  /* The span itself is now empty and non-interactive */
-  display: inline; /* Ensure it behaves like text */
-  user-select: none;
-  pointer-events: none;
-  /* No positioning needed on the span itself */
-}
-
-.syllable-hyphen::after {
-  content: '-'; /* Display a hyphen visually */
-  /* Remove absolute positioning to keep it in text flow */
-  /* position: absolute; */
-  /* left: -0.1em; */
-  /* top: 0; */
-  position: static !important; /* Force static positioning */
-  display: inline; /* Ensure it behaves like text */
-  color: var(--syllable-hyphen-color);
-  opacity: 0.6; /* Adjust opacity as needed */
-  pointer-events: none;
-  user-select: none;
-  /* Optional: adjust vertical alignment slightly if needed */
-  /* vertical-align: baseline; */
-}
-/* --- End Syllable Hyphen Styling --- */
-
-
-/* Tiptap Focus State */
-.ProseMirror:focus-visible {
-  outline: none;
-}
-.ProseMirror:focus {
-  outline: none;
-}
-.editor-layout-tiptap:has(.ProseMirror:focus) {
-  outline: 2px solid var(--focus-ring-color);
-  outline-offset: 2px;
-  border-color: var(--text-accent);
-}
-
-/* --- TIER 1: Loading Indicator Style --- */
-.processing-indicator {
-  font-size: 0.8em;
-  opacity: 0.7;
-  animation: spin 1.5s linear infinite;
-  display: inline-block; /* Needed for transform */
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* --- TIER 2: Error Message Style --- */
-.error-message {
-  color: var(--error-color);
-  background-color: rgba(var(--shadow-color-rgb), 0.05); /* Subtle background */
-  border: 1px solid var(--error-color);
-  border-radius: 4px;
-  padding: 5px 10px;
-  font-size: 0.85em;
-  margin-bottom: 15px;
-  text-align: center;
-}
-/* Slightly different warning color for processing errors */
-.error-message:first-of-type { /* Assuming processing errors appear first */
-   color: var(--warning-color);
-   border-color: var(--warning-color);
-}
-
-
-/* --- Custom Scrollbar Styling (Webkit only) --- */
-body::-webkit-scrollbar {
-  width: 10px;
-}
-body::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
-}
-body::-webkit-scrollbar-thumb {
-  background-color: var(--scrollbar-thumb);
-  border-radius: 5px;
-  border: 2px solid var(--scrollbar-track);
-}
-body::-webkit-scrollbar-thumb:hover {
-  background-color: var(--text-secondary);
-}
-
-
-/* --- Responsiveness --- */
-@media (max-width: 768px) {
-  body { padding: 15px; }
-  .app-container { padding: 30px; margin: 20px auto; border-radius: 10px;}
-  h1 { font-size: 1.8rem; }
-  .app-logo { height: 45px; }
-}
-
-@media (max-width: 600px) {
-  body { padding: 10px; }
-  .app-container { padding: 20px; margin: 10px; border-radius: 8px; }
-  .app-header { margin-bottom: 10px; }
-  .app-logo { height: 40px; margin-bottom: 10px;}
-  h1 { font-size: 1.6rem; }
-  .hinweis { font-size: 0.85em; margin-bottom: 25px;}
+  
+  @media (prefers-color-scheme: dark) {
+    :root {
+      /* Dark Mode */
+      --bg-primary: #282c34;
+      --bg-secondary: #212529;
+      --bg-editor: #2e3238;
+      --text-primary: #dfe1e4;
+      --text-secondary: #9ea4ac;
+      --text-accent: #61afef;        /* Lighter blue accent */
+      --text-accent-hover: #84c0f7;
+      --border-color: #4b5159;
+      --border-color-subtle: #3b4046;
+      --shadow-color-rgb: 200, 200, 200;
+      --focus-ring-color: rgba(97, 175, 239, 0.3);
+      --syllable-hyphen-color: rgb(255, 183, 0); /* Orangey-yellow */
+      --scrollbar-thumb: #525861;
+      --scrollbar-track: var(--bg-secondary);
+      --gutter-active-color: var(--text-accent);
+      --error-color: #f8d7da; /* Lighter red for dark mode */
+      --warning-color: #fff3cd; /* Lighter yellow for dark mode */
+    }
+  }
+  
+  /* ==========================================================================
+     Global Styles & Typography
+     ========================================================================== */
+  
+  body {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    line-height: 1.65;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .app-container {
+    max-width: 900px;
+    margin: 40px auto;
+    background-color: var(--bg-primary);
+    padding: 40px 50px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(var(--shadow-color-rgb), 0.08);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  /* ==========================================================================
+     Header & Intro Text
+     ========================================================================== */
+  
+  .app-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .app-logo {
+    height: 50px;
+    width: auto;
+    margin-bottom: 15px;
+  }
+  
+  h1 {
+    text-align: center;
+    color: var(--text-primary);
+    margin: 0;
+    font-weight: 700;
+    font-size: 2rem;
+    letter-spacing: -0.5px;
+  }
+  
+  .hinweis {
+    text-align: center;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    margin-bottom: 40px;
+    max-width: 550px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5;
+  }
+  
+  /* ==========================================================================
+     Editor Layout (Tiptap)
+     ========================================================================== */
+  
   .editor-layout-tiptap {
-     border-radius: 6px;
+    position: relative;
+    display: flex;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    transition: border-color 0.2s ease;
+    /* Ensure focus outline doesn't overlap internal elements strangely */
+    overflow: hidden;
   }
+  
+  /* Gutter Container */
   .editor-gutter {
-    width: 35px;
-    padding-top: 10px;
+    flex-shrink: 0;
+    width: 45px;
+    position: relative;
+    background-color: var(--bg-secondary);
+    border-right: 1px solid var(--border-color-subtle);
+    border-top-left-radius: 9px; /* Matches parent */
+    border-bottom-left-radius: 9px; /* Matches parent */
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    padding-top: 15px; /* Align roughly with editor padding */
+    box-sizing: border-box;
   }
-  .gutter-line-count {
-    width: 30px;
-    right: 2px;
-    font-size: 10px;
-  }
-  .ProseMirror {
-    padding: 10px 15px;
-    min-height: 40vh;
-  }
+  
+  /* Editor Content Wrapper */
   .editor-content-wrapper {
-    border-top-right-radius: 5px;
-    border-bottom-right-radius: 5px;
+    flex-grow: 1;
+    background-color: var(--bg-editor);
+    border-top-right-radius: 9px; /* Matches parent */
+    border-bottom-right-radius: 9px; /* Matches parent */
+    transition: background-color 0.2s ease;
+    /* Ensure content scrolls if it overflows */
+    overflow-y: auto;
+    /* Potentially set a max-height if needed, or rely on ProseMirror's min-height */
+    /* max-height: 70vh; */
   }
-}
+  
+  /* ==========================================================================
+     ProseMirror Editor Core Styles
+     ========================================================================== */
+  
+  .ProseMirror {
+    padding: 15px 25px;
+    min-height: 350px;
+    outline: none;
+    line-height: 1.65; /* Match body/gutter line-height */
+    color: var(--text-primary);
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    -webkit-font-variant-ligatures: none;
+    font-variant-ligatures: none;
+    font-feature-settings: "liga" 0; /* Prevent ligatures from interfering */
+    position: relative; /* For decorations */
+    caret-color: var(--text-accent);
+    transition: color 0.2s ease;
+  }
+  
+  /* --- PARAGRAPH SPACING FIXES --- */
+  
+  /* Default Paragraph Spacing - Add space BELOW paragraphs */
+  .ProseMirror p {
+    margin-top: 0; /* Reset any top margin from defaults or injectCSS */
+    margin-bottom: 1em;
+    position: relative;
+  }
+  
+  /* Alternative to p:has(+ p:empty) without using :has() selector
+     Use JavaScript to add a custom class to paragraphs before empty ones */
+  .ProseMirror p.before-empty-paragraph {
+    margin-bottom: 0;
+  }
 
+  /* Adjust empty paragraph spacing to be more compact */
+  .ProseMirror p:empty {
+    margin: 0;
+    padding: 0;
+    height: 0.5em;
+    min-height: 0.5em;
+  }
 
-/* --- Lyric Structure Formatting --- */
-.ProseMirror p.lyric-header,
-.ProseMirror .lyric-header > p
-{
-  font-weight: bold;
-  color: var(--text-accent);
-  margin-bottom: 0.8em;
-  margin-left: 0 !important;
-}
+  /* Remove bottom margin from the very last paragraph */
+  .ProseMirror p:last-child {
+    margin-bottom: 0;
+  }
 
-.ProseMirror .lyric-chord {
-  color: #0b5ed7;
-  font-weight: 500;
-  font-family: 'Courier New', Courier, monospace;
-  background-color: rgba(13, 110, 253, 0.1);
-  padding: 0.05em 0.2em;
-  border-radius: 3px;
-  font-size: 0.9em;
-}
+  /* Ensure consistent header spacing */
+  .ProseMirror p.lyric-header {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+  }
 
-.ProseMirror p.lyric-comment {
-  color: var(--text-secondary);
-  font-style: italic;
-  opacity: 0.75;
-  margin-left: 0 !important;
-}
+  /* Special case: headers immediately after empty paragraphs */
+  .ProseMirror p:empty + p.lyric-header {
+    margin-top: 0;
+  }
 
-/* Optional: Indentation for regular lyric lines */
-.ProseMirror p:not(.lyric-header):not(.lyric-comment) {
-  /* margin-left: 20px; */
-}
+  /* --- END PARAGRAPH SPACING FIXES --- */
+  
+  
+  /* Editor Focus Ring */
+  .ProseMirror:focus-visible {
+    outline: none; /* Disable default browser outline */
+  }
+  .ProseMirror:focus {
+    outline: none; /* Fallback */
+  }
+  /* Apply focus ring to the layout container for better visual */
+  .editor-layout-tiptap:has(.ProseMirror:focus) {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
+    border-color: var(--text-accent);
+  }
+  
+  /* ==========================================================================
+     Gutter Line Numbers
+     ========================================================================== */
+  
+  .gutter-line-count {
+    position: absolute;
+    right: 5px;
+    width: 35px;
+    text-align: right;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    user-select: none;
+    line-height: 1.65; /* Match editor line-height */
+    transition: opacity 0.2s ease, color 0.2s ease, font-weight 0.2s ease, transform 0.1s ease;
+    padding-top: 0;
+    box-sizing: border-box;
+    transform-origin: top right;
+  }
+  
+  .gutter-line-count.active-count {
+    color: var(--gutter-active-color);
+    font-weight: 600;
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  
+  .gutter-line-count.error-count {
+    color: var(--warning-color);
+    font-weight: bold;
+    opacity: 0.8;
+  }
+  
+  /* ==========================================================================
+     Syllable Hyphen Visualization
+     ========================================================================== */
+  
+  .syllable-hyphen {
+    display: inline;
+    user-select: none;
+    pointer-events: none;
+  }
+  
+  .syllable-hyphen::after {
+    content: '-';
+    position: static !important;
+    display: inline;
+    color: var(--syllable-hyphen-color);
+    opacity: 0.6;
+    pointer-events: none;
+    user-select: none;
+  }
+  
+  /* ==========================================================================
+     Lyric Structure Formatting (Headers, Chords, Comments)
+     ========================================================================== */
+  
+  /* Header Styling ([Verse 1], [Hook], etc.) */
+  .ProseMirror p.lyric-header,
+  .ProseMirror .lyric-header > p /* Handle potential nesting */
+  {
+    font-weight: bold;
+    color: var(--text-accent);
+    /* Adjust spacing: provide consistent space unless preceded by empty line */
+    margin-top: 0.75em; /* Default top spacing */
+    margin-bottom: 0.5em; /* Space below headers */
+    margin-left: 0 !important;
+  }
+  
+  /* Remove top margin ONLY if preceded by an empty paragraph */
+  .ProseMirror p:empty + p.lyric-header {
+    margin-top: 0;
+  }
+  
+  /* Chord Styling ([G], [Am], etc.) */
+  .ProseMirror .lyric-chord {
+    color: var(--text-accent-hover);
+    font-weight: 500;
+    font-family: 'Courier New', Courier, monospace;
+    background-color: rgba(var(--shadow-color-rgb, 0, 0, 0), 0.05); /* More neutral background */
+    padding: 0.05em 0.2em;
+    border-radius: 3px;
+    font-size: 0.9em;
+    /* Ensure chords don't prevent line breaking */
+    word-break: keep-all; /* Try to keep chord together */
+    white-space: nowrap; /* Prevent breaking inside the chord */
+  }
+  
+  /* Comment Styling (# This is a comment) */
+  .ProseMirror p.lyric-comment {
+    color: var(--text-secondary);
+    font-style: italic;
+    opacity: 0.75;
+    margin-left: 0 !important;
+    /* Restore default paragraph margin, unless followed by empty */
+    margin-bottom: 1em;
+  }
+  
+  .ProseMirror p.lyric-comment:has(+ p:empty) {
+    margin-bottom: 0;
+  }
+  
+  
+  /* ==========================================================================
+     UI Indicators (Loading, Errors)
+     ========================================================================== */
+  
+  .processing-indicator {
+    font-size: 0.8em;
+    opacity: 0.7;
+    animation: spin 1.5s linear infinite;
+    display: inline-block;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  .error-message {
+    border: 1px solid var(--error-color);
+    color: var(--error-color);
+    background-color: rgba(var(--shadow-color-rgb), 0.05);
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 0.85em;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+  
+  .error-message:first-of-type {
+     color: var(--warning-color);
+     border-color: var(--warning-color);
+  }
+  
+  /* ==========================================================================
+     Custom Scrollbar (Webkit only)
+     ========================================================================== */
+  
+  body::-webkit-scrollbar {
+    width: 10px;
+  }
+  body::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  body::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 5px;
+    border: 2px solid var(--scrollbar-track);
+  }
+  body::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-secondary);
+  }
+  
+  /* Apply similar scrollbar to editor wrapper if it becomes scrollable */
+  .editor-content-wrapper::-webkit-scrollbar {
+    width: 8px;
+  }
+  .editor-content-wrapper::-webkit-scrollbar-track {
+    background: var(--bg-editor); /* Match editor background */
+    border-top-right-radius: 9px;
+    border-bottom-right-radius: 9px;
+  }
+  .editor-content-wrapper::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 4px;
+    border: 2px solid var(--bg-editor);
+  }
+  .editor-content-wrapper::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-secondary);
+  }
+  
+  
+  /* ==========================================================================
+     Responsiveness
+     ========================================================================== */
+  
+  @media (max-width: 768px) {
+    body { padding: 15px; }
+    .app-container { padding: 30px; margin: 20px auto; border-radius: 10px;}
+    h1 { font-size: 1.8rem; }
+    .app-logo { height: 45px; }
+  }
+  
+  @media (max-width: 600px) {
+    body { padding: 10px; }
+    .app-container { padding: 20px; margin: 10px auto; border-radius: 8px; }
+    .app-header { margin-bottom: 10px; }
+    .app-logo { height: 40px; margin-bottom: 10px;}
+    h1 { font-size: 1.6rem; }
+    .hinweis { font-size: 0.85em; margin-bottom: 25px;}
+  
+    .editor-layout-tiptap {
+       border-radius: 6px;
+    }
+    .editor-gutter {
+      width: 35px;
+      padding-top: 10px;
+    }
+    .gutter-line-count {
+      width: 30px;
+      right: 2px;
+      font-size: 10px;
+    }
+    .ProseMirror {
+      padding: 10px 15px;
+      min-height: 40vh;
+    }
+    .editor-content-wrapper {
+      border-top-right-radius: 5px;
+      border-bottom-right-radius: 5px;
+    }
+  }
