@@ -17,6 +17,8 @@
     "@tiptap/starter-kit": "^2.11.5",
     "hyphen": "^1.10.6",
     "lodash.debounce": "^4.0.8",
+    "prosemirror-state": "^1.4.3",  
+    "prosemirror-view": "^1.39.1",   
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

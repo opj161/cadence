@@ -15,7 +15,7 @@
   --shadow-color-rgb: 0, 0, 0;
   --focus-ring-color: rgba(13, 110, 253, 0.25);
   /* Define the color for the visible hyphen */
-  --syllable-hyphen-color:rgb(255, 217, 0);
+  --syllable-hyphen-color:rgb(255, 217, 0); /* Keep your desired color */
   --scrollbar-thumb: #ced4da;
   --scrollbar-track: var(--bg-secondary);
   --gutter-active-color: var(--text-accent); /* Farbe für aktive Gutter-Zahl */
@@ -26,19 +26,19 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* Dark Mode */
-    --bg-primary: #282c34;          /* Etwas helleres Dunkelgrau */
-    --bg-secondary: #212529;        /* Noch dunkler für Body/Gutter */
-    --bg-editor: #2e3238;           /* Editor etwas heller als Primary */
-    --text-primary: #dfe1e4;        /* Helleres Grau statt fast weiß */
-    --text-secondary: #9ea4ac;      /* Subtileres Sekundärgrau */
-    --text-accent: #61afef;         /* Helleres, leicht entsättigtes Blau */
-    --text-accent-hover: #84c0f7;   /* Heller für Hover */
-    --border-color: #4b5159;        /* Angepasste Rahmenfarbe */
-    --border-color-subtle: #3b4046; /* Subtiler */
-    --shadow-color-rgb: 200, 200, 200; /* Heller Schatten RGB */
+    --bg-primary: #282c34;
+    --bg-secondary: #212529;
+    --bg-editor: #2e3238;
+    --text-primary: #dfe1e4;
+    --text-secondary: #9ea4ac;
+    --text-accent: #61afef;
+    --text-accent-hover: #84c0f7;
+    --border-color: #4b5159;
+    --border-color-subtle: #3b4046;
+    --shadow-color-rgb: 200, 200, 200;
     --focus-ring-color: rgba(97, 175, 239, 0.3);
     /* Update dark mode hyphen color if needed */
-    --syllable-hyphen-color:rgb(255, 183, 0);
+    --syllable-hyphen-color:rgb(255, 183, 0); /* Keep your desired color */
     --scrollbar-thumb: #525861;
     --scrollbar-track: var(--bg-secondary);
     --gutter-active-color: var(--text-accent);
@@ -173,20 +173,26 @@ h1 {
   width: 35px;
   text-align: right;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-  font-size: 11px;
+  font-size: 11px; /* Keep original size */
   color: var(--text-secondary);
   opacity: 0.6;
   user-select: none;
-  /* pointer-events: none; */ /* REMOVED for Tier 2 Accessibility */
-  line-height: 1.65;
-  transition: opacity 0.2s ease, color 0.2s ease, font-weight 0.2s ease;
+  line-height: 1.65; /* Match editor line-height */
+  transition: opacity 0.2s ease, color 0.2s ease, font-weight 0.2s ease, transform 0.1s ease; /* Added transform */
+   /* Ensure it aligns with the top of the paragraph */
+   padding-top: 0; /* Adjust if needed based on exact paragraph padding */
+   box-sizing: border-box;
+   transform-origin: top right;
 }
+
 
 .gutter-line-count.active-count {
   color: var(--gutter-active-color);
   font-weight: 600;
   opacity: 1;
+  transform: scale(1.1); /* Slightly larger when active */
 }
+
 
 /* TIER 2: Gutter Error State */
 .gutter-line-count.error-count {
@@ -195,24 +201,30 @@ h1 {
   opacity: 0.8;
 }
 
+
 /* --- Syllable Hyphen Styling (VISIBLE) --- */
 .syllable-hyphen {
   /* The span itself is now empty and non-interactive */
+  display: inline; /* Ensure it behaves like text */
   user-select: none;
   pointer-events: none;
-  /* position: relative; */ /* Not needed for static ::after */
+  /* No positioning needed on the span itself */
 }
 
 .syllable-hyphen::after {
-  content: '-'; /* Ensure this is the character you want */
-  position: static !important; /* Keep it in the text flow */
+  content: '-'; /* Display a hyphen visually */
+  /* Remove absolute positioning to keep it in text flow */
+  /* position: absolute; */
+  /* left: -0.1em; */
+  /* top: 0; */
+  position: static !important; /* Force static positioning */
+  display: inline; /* Ensure it behaves like text */
   color: var(--syllable-hyphen-color);
-  opacity: 0.5; /* Or 1.0 for testing */
+  opacity: 0.6; /* Adjust opacity as needed */
   pointer-events: none;
   user-select: none;
-  /* Add minor adjustments if needed for visual alignment */
-  /* display: inline-block; */ /* Might help stabilize layout */
-  /* vertical-align: baseline; */ /* Or middle, etc. */
+  /* Optional: adjust vertical alignment slightly if needed */
+  /* vertical-align: baseline; */
 }
 /* --- End Syllable Hyphen Styling --- */
 
@@ -262,7 +274,6 @@ h1 {
 
 
 /* --- Custom Scrollbar Styling (Webkit only) --- */
-/* Apply to body or html if desired, removed from editor-content-wrapper */
 body::-webkit-scrollbar {
   width: 10px;
 }
@@ -314,4 +325,37 @@ body::-webkit-scrollbar-thumb:hover {
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
   }
+}
+
+
+/* --- Lyric Structure Formatting --- */
+.ProseMirror p.lyric-header,
+.ProseMirror .lyric-header > p
+{
+  font-weight: bold;
+  color: var(--text-accent);
+  margin-bottom: 0.8em;
+  margin-left: 0 !important;
+}
+
+.ProseMirror .lyric-chord {
+  color: #0b5ed7;
+  font-weight: 500;
+  font-family: 'Courier New', Courier, monospace;
+  background-color: rgba(13, 110, 253, 0.1);
+  padding: 0.05em 0.2em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.ProseMirror p.lyric-comment {
+  color: var(--text-secondary);
+  font-style: italic;
+  opacity: 0.75;
+  margin-left: 0 !important;
+}
+
+/* Optional: Indentation for regular lyric lines */
+.ProseMirror p:not(.lyric-header):not(.lyric-comment) {
+  /* margin-left: 20px; */
 }

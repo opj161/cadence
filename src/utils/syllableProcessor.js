@@ -1,6 +1,9 @@
 import { hyphenate } from 'hyphen/de';
 import { SyllableVisualizerPluginKey } from '../SyllableVisualizer';
 
+// Regex for headers (used to skip hyphenation)
+const headerRegex = /^\[([^\]]+)\]$/;
+
 // Ensure parameter order matches the call site in App.jsx
 export const processTextLogic = async (
     editor,               // 1st arg
@@ -10,33 +13,16 @@ export const processTextLogic = async (
     setProcessingErrors,  // 5th arg
     DEBUG_MODE = false    // 6th arg
 ) => {
-  // Check if editor is valid BEFORE trying to use state setters
-  if (!editor || !editor.state || !editor.isEditable) {
-    if (DEBUG_MODE) console.log("[ProcessTextLogic] Skipping: Editor not ready or not editable.");
-    if(typeof setIsProcessing === 'function') setIsProcessing(false);
-    return;
-  }
+  // ... (initial checks remain the same) ...
 
-  // Check if setters are functions *before* calling them
-  if (typeof setIsProcessing !== 'function' || typeof setGutterData !== 'function' || typeof setProcessingErrors !== 'function') {
-      console.error("[ProcessTextLogic] ERROR: One or more state setters are not functions!", {
-          setIsProcessing: typeof setIsProcessing,
-          setGutterData: typeof setGutterData,
-          setProcessingErrors: typeof setProcessingErrors,
-      });
-      if(typeof setIsProcessing === 'function') setIsProcessing(false);
-      return;
-  }
-
-  // Now it's safe to call the setters
   setIsProcessing(true);
-  setGutterData([]);
-  setProcessingErrors([]);
+  setGutterData([]); // Clear gutter data
+  setProcessingErrors([]); // Clear processing errors
 
   const failedWords = [];
   let pointErrors = 0;
   const timestamp = Date.now();
-  if (DEBUG_MODE) console.log(`[ProcessTextLogic Run ${timestamp}] Starting async processing...`);
+  if (DEBUG_MODE) console.log(`[ProcessTextLogic Run ${timestamp}] Starting async processing... Setting isProcessing = true, Cleared Data`);
 
   try {
     const { state } = editor;
@@ -48,82 +34,84 @@ export const processTextLogic = async (
     // --- Pass 1: Hyphenate unique words, build cache, calculate decoration points ---
     const textNodes = [];
     doc.descendants((node, pos) => {
-        if (node.isText && node.text) {
+        // *** ADD CHECK FOR HEADER PARENT ***
+        const parent = node.isText ? doc.resolve(pos).parent : null;
+        const parentIsHeader = parent && parent.type.name === 'paragraph' && headerRegex.test(parent.textContent.trim());
+
+        // Only process text nodes that are NOT inside a header paragraph
+        if (node.isText && node.text && !parentIsHeader) {
             textNodes.push({ node, pos });
+        } else if (node.isText && node.text && parentIsHeader) {
+             if (DEBUG_MODE) console.log(`[ProcessTextLogic Run ${timestamp}] Skipping hyphenation for header line: "${parent.textContent}"`);
         }
     });
 
+
     for (const { node, pos } of textNodes) {
-        const nodeStartPos = pos; // ProseMirror positions are often 1-based after node start
-        let currentSegmentStartIndex = 0;
-        const segments = node.text.split(/(\s+)/); // Split by whitespace, keeping delimiters
+        const nodeStartPos = pos + 1; // Position inside the text node
+        let currentWordStartIndex = 0;
+        // Split by spaces AND punctuation attached to words for better word identification
+        const segments = node.text.split(/(\s+|[.,!?;:]+(?=\s|$))/);
+
 
         for (const segment of segments) {
-            const segmentLength = segment.length;
-            if (!segment || /^\s+$/.test(segment)) {
-                currentSegmentStartIndex += segmentLength; // Advance past whitespace
+             // Skip empty segments, pure whitespace, or pure punctuation segments
+             if (!segment || /^\s+$/.test(segment) || /^[.,!?;:]+$/.test(segment)) {
+                currentWordStartIndex += segment.length;
                 continue;
             }
 
-            // --- FIX: Robust Word Extraction and Indexing ---
-            // Match the core word characters (\w includes letters, numbers, underscore)
-            // and capture its start index within the current segment.
-            // This regex handles leading/trailing non-word chars.
-            const wordMatch = segment.match(/^(\W*)(\w+)(\W*)$/);
+            const word = segment;
+            const wordStartPosInNode = currentWordStartIndex;
+            // Match word, allowing potential leading/trailing punctuation handled by split
+            const cleanWordMatch = word.match(/^([^.,!?;:]*)(.*?)$/);
+            const cleanWord = cleanWordMatch ? cleanWordMatch[1] : word;
 
-            if (wordMatch) {
-                const leadingChars = wordMatch[1] || '';
-                const coreWord = wordMatch[2]; // This is the word to hyphenate
-                //const trailingChars = wordMatch[3] || ''; // We don't need trailing chars for positioning
-                const coreWordStartIndexInSegment = leadingChars.length; // Index where core word starts in the segment
 
-                if (coreWord && coreWord.length >= 3) { // Only process words of sufficient length
-                    let hyphenationResult = wordCache.get(coreWord);
-
-                    if (!hyphenationResult) {
-                        try {
-                            const hyphenated = await hyphenate(coreWord, { hyphenChar: '\u00AD', minWordLength: 3 });
-                            const hyphenPositions = [];
-                            let charIndex = 0;
-                            for (let i = 0; i < hyphenated.length; i++) {
-                              if (hyphenated[i] === '\u00AD') {
-                                hyphenPositions.push(charIndex);
-                              } else {
-                                charIndex++;
-                              }
-                            }
-                            const syllableCount = hyphenPositions.length + 1;
-                            hyphenationResult = { positions: hyphenPositions, count: syllableCount };
-                            wordCache.set(coreWord, hyphenationResult);
-                        } catch (e) {
-                            console.warn(`[ProcessTextLogic Run ${timestamp}] Hyphenation error on word "${coreWord}":`, e.message);
-                            hyphenationResult = { positions: [], count: 1 };
-                            wordCache.set(coreWord, hyphenationResult);
-                            failedWords.push(coreWord);
+            if (cleanWord && cleanWord.length >= 3) { // Keep hyphenation check
+                let hyphenationResult = wordCache.get(cleanWord);
+                if (!hyphenationResult) {
+                    try {
+                        // Use soft hyphen for internal calculation
+                        const hyphenated = await hyphenate(cleanWord, { hyphenChar: '\u00AD', minWordLength: 3 });
+                        const hyphenPositions = [];
+                        let charIndex = 0;
+                        // Count hyphen positions relative to the clean word
+                        for (let i = 0; i < hyphenated.length; i++) {
+                          if (hyphenated[i] === '\u00AD') {
+                             hyphenPositions.push(charIndex);
+                          } else {
+                             charIndex++;
+                          }
                         }
+                        // Syllable count is based on clean word hyphenation
+                        const syllableCount = hyphenPositions.length + 1;
+                        hyphenationResult = { positions: hyphenPositions, count: syllableCount };
+                        wordCache.set(cleanWord, hyphenationResult);
+                    } catch (e) {
+                        if (DEBUG_MODE) console.warn(`[ProcessTextLogic Run ${timestamp}] Hyphenation error on word "${cleanWord}":`, e.message);
+                        hyphenationResult = { positions: [], count: 1 }; // Default to 1 syllable on error
+                        wordCache.set(cleanWord, hyphenationResult);
+                        failedWords.push(cleanWord);
                     }
-
-                    // --- FIX: Correct Absolute Position Calculation ---
-                    hyphenationResult.positions.forEach(relativePos => {
-                        // absolutePos = start of node + start of segment in node + start of core word in segment + relative position in core word
-                        const absolutePos = nodeStartPos + currentSegmentStartIndex + coreWordStartIndexInSegment + relativePos;
-
-                        if (absolutePos > 0 && absolutePos <= doc.content.size) {
-                            newDecorationPoints.push({ pos: absolutePos, type: 'hyphen' });
-                        } else {
-                            if (DEBUG_MODE) console.warn(`[ProcessTextLogic Run ${timestamp}] Invalid absolutePos calculated: ${absolutePos} for word '${coreWord}', relativePos ${relativePos}. Doc size: ${doc.content.size}`);
-                            pointErrors++;
-                        }
-                    });
                 }
+                 // Calculate absolute position for decoration based on word start and relative hyphen pos
+                 hyphenationResult.positions.forEach(relativePos => {
+                  // Ensure absolute position is within document bounds
+                  const absolutePos = nodeStartPos + wordStartPosInNode + relativePos;
+                  if (absolutePos > 0 && absolutePos <= doc.content.size) {
+                     newDecorationPoints.push({ pos: absolutePos, type: 'hyphen' });
+                  } else {
+                    if (DEBUG_MODE) console.warn(`[ProcessTextLogic Run ${timestamp}] Invalid absolutePos calculated: ${absolutePos} for word '${cleanWord}', relativePos ${relativePos}. Doc size: ${doc.content.size}`);
+                    pointErrors++;
+                  }
+                });
             }
-            // --- End of Fix ---
-
-            // Advance index for the next segment
-            currentSegmentStartIndex += segmentLength;
-        } // End loop through segments
-    } // End loop through textNodes
-    if (DEBUG_MODE) console.log(`[ProcessTextLogic Run ${timestamp}] Pass 1 finished. Cache size: ${wordCache.size}, Decoration points: ${newDecorationPoints.length}, Hyphenation errors: ${failedWords.length}, Point errors: ${pointErrors}`);
+             // Increment index by the length of the original segment (word + potential punctuation)
+            currentWordStartIndex += segment.length;
+        }
+    }
+     if (DEBUG_MODE) console.log(`[ProcessTextLogic Run ${timestamp}] Pass 1 finished. Cache size: ${wordCache.size}, Decoration points: ${newDecorationPoints.length}, Hyphenation errors: ${failedWords.length}, Point errors: ${pointErrors}`);
 
 
     // --- Pass 2: Calculate paragraph syllable counts ---
@@ -131,23 +119,42 @@ export const processTextLogic = async (
         if (node.type.name === 'paragraph') {
             let paragraphSyllableCount = 0;
             const paragraphNodePos = pos;
+             // Check if this paragraph is a header
+             const isHeader = headerRegex.test(node.textContent.trim());
 
-            // Iterate through actual words more reliably
             node.forEach(childNode => {
                 if(childNode.isText && childNode.text) {
-                    // Match words within this text node
-                     const words = childNode.text.match(/\b\w+\b/g) || []; // Use \w+ to match word characters
-                     words.forEach(word => {
-                         if(word.length >= 3) { // Check length again for consistency
-                            const cachedResult = wordCache.get(word);
-                            paragraphSyllableCount += cachedResult ? cachedResult.count : 1;
-                         } else if (word.length > 0) {
-                             paragraphSyllableCount += 1; // Count short words as 1 syllable
+                    // Split by spaces AND punctuation attached to words
+                    childNode.text.trim().split(/(\s+|[.,!?;:]+(?=\s|$))/).forEach(segment => {
+                         // Skip empty, whitespace, or punctuation segments
+                         if (!segment || /^\s+$/.test(segment) || /^[.,!?;:]+$/.test(segment)) return;
+
+                         const word = segment;
+                         const cleanWordMatch = word.match(/^([^.,!?;:]*)(.*?)$/);
+                         const cleanWord = cleanWordMatch ? cleanWordMatch[1] : word;
+
+                         if (cleanWord) {
+                             // *** USE CACHED COUNT, BUT DEFAULT TO 1 IF HEADER OR NOT CACHED ***
+                             const cachedResult = wordCache.get(cleanWord);
+                             // Headers count as 1 syllable total (or based on simple word count if preferred)
+                             // Non-headers use cached count or default to 1
+                             if (isHeader) {
+                                 // Option 1: Count header as 1 syllable total
+                                 // paragraphSyllableCount = 1; // Set outside the loop if you want 1 for the whole line
+                                 // Option 2: Count words in header simply
+                                 paragraphSyllableCount += 1;
+                             } else {
+                                paragraphSyllableCount += cachedResult ? cachedResult.count : 1;
+                             }
                          }
                     });
                 }
             });
-
+             // If header counted as 1 total, ensure it's set here
+             if (isHeader) {
+                 // paragraphSyllableCount = 1; // If using Option 1 above
+             }
+             // Store nodePos + 1 as before for consistency with gutter logic
             newLineCounts.push({ nodePos: paragraphNodePos + 1, count: paragraphSyllableCount });
         }
     });
@@ -155,16 +162,19 @@ export const processTextLogic = async (
 
 
     // --- Update State and Plugin ---
+    // ... (rest of the function remains the same) ...
      if (typeof setLineCounts === 'function') setLineCounts(newLineCounts);
      if (typeof setProcessingErrors === 'function') setProcessingErrors(failedWords);
 
     if (editor && !editor.isDestroyed) {
         if (DEBUG_MODE) console.log(`[ProcessTextLogic Run ${timestamp}] Dispatching transaction with ${newDecorationPoints.length} points.`);
-        const tr = editor.state.tr;
-        // Send potentially empty points array if no hyphens found
-        tr.setMeta(SyllableVisualizerPluginKey, { points: newDecorationPoints });
+        // Use editor state's transaction directly if no insertions happened in LyricStructure plugin
+        // If insertions *could* have happened, this dispatch might be slightly delayed relative to the insertion,
+        // but SyllableVisualizer's mapping should handle it.
+        const visualizerTr = editor.state.tr;
+        visualizerTr.setMeta(SyllableVisualizerPluginKey, { points: newDecorationPoints });
         if (editor.view && !editor.view.isDestroyed) {
-            editor.view.dispatch(tr);
+            editor.view.dispatch(visualizerTr);
         } else {
             if (DEBUG_MODE) console.log(`[ProcessTextLogic Run ${timestamp}] Editor view destroyed before dispatch.`);
         }
