@@ -1,0 +1,5 @@
+name = "cadence"
+compatibility_date = "2025-04-08"
+
+[site]
+bucket = "./dist"
