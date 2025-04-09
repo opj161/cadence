@@ -216,6 +216,48 @@ h1 {
 }
 /* --- End Syllable Hyphen Styling --- */
 
+/* --- Paragraph Styling --- */
+.paragraph-node {
+  /* Default styling for paragraphs */
+  margin: 0;
+  padding: 0;
+}
+
+/* Hard break styling */
+.hard-break {
+  /* Ensure hard breaks create line breaks */
+  display: block;
+  height: 1.5em;
+  /* Add a small margin to ensure proper spacing */
+  margin-bottom: 0.1em;
+  /* Ensure the break is visible in the DOM for positioning */
+  min-width: 1px;
+}
+
+/* Debug visualization for paragraphs and breaks */
+/* Uncomment these styles when debugging paragraph structure */
+
+/*
+.paragraph-node {
+  border: 1px dashed rgba(0, 0, 255, 0.2);
+  margin: 2px 0;
+  padding: 2px;
+}
+
+.paragraph-node:empty {
+  min-height: 1em;
+  border: 1px dashed rgba(255, 0, 0, 0.2);
+}
+
+.hard-break::after {
+  content: '↵';
+  color: rgba(255, 0, 0, 0.5);
+  font-size: 0.8em;
+  vertical-align: super;
+}
+*/
+
+
 
 /* Tiptap Focus State */
 .ProseMirror:focus-visible {

@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 // Import necessary ProseMirror/Tiptap modules
-import { Slice, Fragment } from '@tiptap/pm/model'; // <-- Add this import
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { SyllableVisualizer, SyllableVisualizerPluginKey } from './SyllableVisualizer';
+import { SyllableVisualizer } from './SyllableVisualizer';
 import { processTextLogic } from './utils/syllableProcessor';
 import debounce from 'lodash.debounce';
 
-const DEBUG_APP = false; // Keep false for production
+// Debug mode can be toggled during development
+let DEBUG_APP = false; // Default to false for production
 
 function App() {
   const [lineCounts, setLineCounts] = useState([]);
@@ -19,6 +19,7 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingErrors, setProcessingErrors] = useState([]);
   const [gutterErrors, setGutterErrors] = useState(false);
+  const [debugMode, setDebugMode] = useState(DEBUG_APP);
 
   const processText = useCallback(() => {
     // ... (processText logic remains the same)
@@ -68,92 +69,105 @@ function App() {
       StarterKit.configure({
           history: true,
           gapcursor: true,
-          // Ensure paragraph is the default block node if needed elsewhere
-          // paragraph: {
-          //   HTMLAttributes: { class: 'paragraph-class' }, // Example attribute
-          // }
+          // Configure paragraph handling
+          paragraph: {
+            HTMLAttributes: { class: 'paragraph-node' },
+          },
+          // Ensure proper handling of hard breaks (newlines)
+          hardBreak: {
+            HTMLAttributes: { class: 'hard-break' },
+          }
       }),
       SyllableVisualizer.configure(),
     ],
-    // --- Add editorProps for paste handling ---
+    // Custom paste handler to preserve original formatting
     editorProps: {
-      handlePaste: (view, event, slice) => {
-          try {
-              // First, check if we have plain text in the clipboard
-              const text = event.clipboardData?.getData('text/plain');
+      handlePaste: (view, event) => {
+        try {
+          // Get plain text from clipboard
+          const text = event.clipboardData?.getData('text/plain');
 
-              // If no text is available, let the default handler manage it
-              if (!text) {
-                  if (DEBUG_APP) console.log("[handlePaste] No text in clipboard, using default handler.");
-                  return false;
-              }
-
-              // Simplified check for complex content - only handle plain text
-              // Let Tiptap handle any complex content with its default handler
-              if (slice.content.childCount > 1 ||
-                  (slice.content.firstChild &&
-                   !slice.content.firstChild.isText &&
-                   slice.content.firstChild.type.name !== 'paragraph')) {
-                  if (DEBUG_APP) console.log("[handlePaste] Complex content detected, using default handler.");
-                  return false;
-              }
-
-              // Check if the text contains newline characters, indicating multi-line paste
-              if (text.includes('\n')) {
-                  if (DEBUG_APP) console.log("[handlePaste] Multi-line text paste detected.");
-                  event.preventDefault(); // Prevent the default paste behavior
-
-                  // Split text into lines, preserving empty lines
-                  const lines = text.split('\n');
-                  if (lines.length === 0) return false;
-
-                  const { state, dispatch } = view;
-                  const { schema } = state;
-                  let { tr } = state;
-                  const { from, to } = state.selection;
-
-                  // Replace the current selection with the first line
-                  tr = tr.replaceWith(from, to, schema.text(lines[0] || ''));
-
-                  // Calculate the position after the first line
-                  let insertPos = from + (lines[0] ? lines[0].length : 0);
-
-                  // Insert subsequent lines as new paragraphs
-                  for (let i = 1; i < lines.length; i++) {
-                      const lineNode = schema.nodes.paragraph.create(null, lines[i] ? schema.text(lines[i]) : null);
-                      tr = tr.insert(insertPos, lineNode);
-                      insertPos += lineNode.nodeSize;
-                  }
-
-                  // Move cursor to the end of the pasted content
-                  tr = tr.setSelection(state.selection.constructor.near(tr.doc.resolve(insertPos)));
-                  dispatch(tr);
-
-                  // Trigger syllable processing after paste
-                  setTimeout(() => {
-                      if (typeof processText === 'function') processText();
-                  }, 10);
-
-                  return true; // Indicate that we've handled the paste
-              }
-
-              // For single-line text, let the default handler manage it
-              if (DEBUG_APP) console.log("[handlePaste] Single-line text, using default handler.");
-              return false;
-
-          } catch (error) {
-              // If anything goes wrong, fall back to the default handler
-              console.error("[handlePaste] Error in paste handler:", error);
-              return false;
+          // If there's no text or no newlines, let Tiptap handle it
+          if (!text || !text.includes('\n')) {
+            if (DEBUG_APP) console.log("[handlePaste] Simple content, using default handler.");
+            return false;
           }
-      },
-      // Optional: Handle dropped text similarly if needed
-      // handleDrop: (view, event, slice, moved) => {
-      //   // Similar logic for dropped text files or text snippets
-      //   return false; // Default behavior
-      // }
+
+          // For text with newlines, we need to preserve the original formatting
+          if (DEBUG_APP) console.log("[handlePaste] Multi-line text detected, preserving original formatting.");
+
+          // Prevent default paste behavior
+          event.preventDefault();
+
+          // Process the text to preserve formatting
+          // - Double newlines (\n\n) become paragraph breaks
+          // - Single newlines (\n) become hard breaks
+          const paragraphs = text.split(/\n\s*\n/);
+
+          const { state, dispatch } = view;
+          const { schema } = state;
+          let { tr } = state;
+          const { from, to } = state.selection;
+
+          // Replace the current selection with the processed content
+          let insertPos = from;
+
+          // Process each paragraph
+          paragraphs.forEach((paragraph, pIndex) => {
+            // Split paragraph into lines
+            const lines = paragraph.split('\n');
+
+            // Create text nodes with hard breaks between lines
+            const paraContent = [];
+
+            // Add each line with hard breaks between them
+            lines.forEach((line, lIndex) => {
+              // Add the line text
+              if (line.length > 0) {
+                paraContent.push(schema.text(line));
+              }
+
+              // Add hard break between lines (but not after the last line)
+              if (lIndex < lines.length - 1) {
+                paraContent.push(schema.nodes.hardBreak.create());
+              }
+            });
+
+            // Create paragraph with the content
+            const paraNode = schema.nodes.paragraph.create(null, paraContent);
+
+            // Replace selection for first paragraph or insert for subsequent ones
+            if (pIndex === 0) {
+              tr = tr.replaceWith(from, to, paraNode);
+              insertPos = from + paraNode.nodeSize;
+            } else {
+              tr = tr.insert(insertPos, paraNode);
+              insertPos += paraNode.nodeSize;
+            }
+          });
+
+          // Move cursor to the end of the pasted content
+          tr = tr.setSelection(state.selection.constructor.near(tr.doc.resolve(insertPos)));
+          dispatch(tr);
+
+          // Process syllables after paste
+          setTimeout(() => {
+            if (typeof processText === 'function') processText();
+          }, 50);
+
+          return true; // We've handled the paste
+        } catch (error) {
+          console.error("[handlePaste] Error in paste handler:", error);
+          // Fall back to default handler
+          return false;
+        }
+      }
     },
-    // --- End of editorProps ---
+    // Configure how Tiptap parses content
+    parseOptions: {
+      // This preserves whitespace in pasted content
+      preserveWhitespace: 'full',
+    },
     content: '<p>Willkommen bei Cadence!</p><p>Tippe deinen Songtext ein. Silben werden visuell getrennt und die Anzahl pro Zeile (Absatz) für den perfekten Flow angezeigt.</p><p>Experimentiere mit verschiedenen Zeilenlängen.</p>',
     onCreate: ({ editor: createdEditor }) => {
       // ... (onCreate logic remains the same)
@@ -226,8 +240,11 @@ function App() {
         const batchSize = 20; // Process 20 lines at a time
         const totalBatches = Math.ceil(lineCounts.length / batchSize);
 
-        // Function to process a batch of lines
-        const processBatch = (batchIndex) => {
+        // Add a small delay to ensure the DOM has been updated
+        // This is especially important after adding line breaks
+        setTimeout(() => {
+          // Function to process a batch of lines
+          const processBatch = (batchIndex) => {
           if (batchIndex >= totalBatches) {
             // All batches processed, update state
             if (DEBUG_APP) console.log("[Gutter Position] Calculated gutter data for", newGutterData.length, "lines");
@@ -257,17 +274,184 @@ function App() {
                 throw new Error(`Invalid nodePos: ${nodePos} (Doc size: ${view.state.doc.content.size})`);
               }
 
-              const node = view.nodeDOM(nodePos);
+              // Try to find the DOM node for this position
+              let node = null;
+              let lineElement = null;
+
+              try {
+                // First, check if this is a line within a paragraph (with hard breaks)
+                if (line.paragraphPos !== undefined) {
+                  // This is a line within a paragraph
+                  // First get the paragraph node
+                  const paragraphNode = view.nodeDOM(line.paragraphPos);
+
+                  if (paragraphNode instanceof HTMLElement) {
+                    // Now we need to find the specific line within this paragraph
+                    // For lines separated by hard breaks, we need to count <br> elements
+
+                    // Get all text nodes and <br> elements in the paragraph
+                    const textAndBreakNodes = [];
+                    const collectNodes = (element) => {
+                      if (element.nodeType === Node.TEXT_NODE) {
+                        textAndBreakNodes.push({ type: 'text', node: element });
+                      } else if (element.nodeName === 'BR') {
+                        textAndBreakNodes.push({ type: 'break', node: element });
+                      } else if (element.childNodes) {
+                        Array.from(element.childNodes).forEach(collectNodes);
+                      }
+                    };
+
+                    collectNodes(paragraphNode);
+
+                    // Find the line based on breaks
+                    // We need to calculate the vertical position of each line within the paragraph
+
+                    // For the first line (lineIndex 0), use the paragraph start
+                    if (line.lineIndex === 0) {
+                      lineElement = paragraphNode;
+                    } else {
+                      // For subsequent lines, we need to find the <br> elements and calculate positions
+                      const breakElements = [];
+                      const findBreakElements = (element) => {
+                        if (element.nodeName === 'BR') {
+                          breakElements.push(element);
+                        } else if (element.childNodes && element.childNodes.length > 0) {
+                          Array.from(element.childNodes).forEach(findBreakElements);
+                        }
+                      };
+
+                      findBreakElements(paragraphNode);
+
+                      if (DEBUG_APP) {
+                        console.log(`[Gutter Position] Line ${i} has lineIndex ${line.lineIndex}, found ${breakElements.length} break elements`);
+                      }
+
+                      // For the first line in a paragraph, we use the paragraph start
+                      if (line.lineIndex === 0) {
+                        lineElement = paragraphNode;
+                      }
+                      // For subsequent lines, we need to find the <br> elements
+                      else if (breakElements.length > 0) {
+                        // Calculate line position based on line index
+                        // If we have fewer break elements than the line index, use the last one
+                        const breakIndex = Math.min(line.lineIndex - 1, breakElements.length - 1);
+                        const breakElement = breakElements[breakIndex];
+
+                        if (breakElement) {
+                          // Create a virtual element for positioning
+                          lineElement = document.createElement('span');
+                          const breakRect = breakElement.getBoundingClientRect();
+                          const paraRect = paragraphNode.getBoundingClientRect();
+
+                          // Calculate the top position relative to the paragraph
+                          // Add a small offset to position below the break
+                          const relativeTop = breakRect.bottom - paraRect.top + 2;
+
+                          // Get line height from the paragraph's computed style
+                          const computedStyle = window.getComputedStyle(paragraphNode);
+                          const lineHeight = parseInt(computedStyle.lineHeight) || 20; // Default to 20px if not set
+
+                          // Set a custom property to use for positioning
+                          lineElement.getBoundingClientRect = () => ({
+                            top: paraRect.top + relativeTop,
+                            bottom: paraRect.top + relativeTop + lineHeight,
+                            left: paraRect.left,
+                            right: paraRect.right,
+                            width: paraRect.width,
+                            height: lineHeight,
+                          });
+
+                          if (DEBUG_APP) {
+                            console.log(`[Gutter Position] Line ${i} (index ${line.lineIndex}) positioned at ${relativeTop}px from paragraph top`);
+                          }
+                        }
+                      }
+
+                      // If we couldn't find the right break element, fall back to paragraph
+                      if (!lineElement) {
+                        lineElement = paragraphNode;
+                      }
+                    }
+                  }
+                } else {
+                  // This is a regular paragraph node
+                  node = view.nodeDOM(nodePos);
+                }
+              } catch {
+                // Ignore the error
+                // Ignore the error and try alternative method
+                // If direct lookup fails, try to resolve the position
+                try {
+                  const resolvedPos = view.state.doc.resolve(nodePos);
+                  const $pos = resolvedPos;
+                  // Try to get the node at the current depth
+                  if ($pos.parent && $pos.parent.type.name === 'paragraph') {
+                    // Try to find this node in the DOM
+                    const start = $pos.start();
+                    node = view.nodeDOM(start);
+                  }
+                } catch (innerError) {
+                  if (DEBUG_APP) console.warn(`[Gutter Position] Error resolving position: ${innerError.message}`);
+                }
+              }
+
+              // Use the line element if found, otherwise fall back to the paragraph node
+              node = lineElement || node;
+
               if (node instanceof HTMLElement) {
                 const nodeRect = node.getBoundingClientRect();
                 const top = Math.max(0, nodeRect.top - wrapperRect.top);
                 newGutterData.push({ ...line, top, error: false });
               } else {
                 // Improved fallback calculation based on line height and position
-                const lineHeight = 20; // Default line height
-                const estimatedTop = i * lineHeight;
-                if (DEBUG_APP) console.warn(`[Gutter Position] Could not find DOM node for pos ${nodePos}. Using estimated position.`);
-                newGutterData.push({ ...line, top: estimatedTop, error: true });
+                // Try to get a reasonable line height from the editor
+                let lineHeight = 20; // Default fallback
+
+                try {
+                  // Try to get the line height from the editor's computed style
+                  const editorElement = document.querySelector('.ProseMirror');
+                  if (editorElement) {
+                    const computedStyle = window.getComputedStyle(editorElement);
+                    const computedLineHeight = parseInt(computedStyle.lineHeight);
+                    if (!isNaN(computedLineHeight) && computedLineHeight > 0) {
+                      lineHeight = computedLineHeight;
+                    }
+                  }
+                } catch (e) {
+                  // Ignore errors and use default
+                }
+
+                // Use previous line's position if available
+                const previousLine = i > 0 ? newGutterData[i - 1] : null;
+
+                // If this is a line within a paragraph with a known paragraph position
+                if (line.paragraphPos !== undefined && line.lineIndex !== undefined) {
+                  // Find the paragraph's position if we have it
+                  const paragraphLine = newGutterData.find(l =>
+                    l.paragraphPos === line.paragraphPos && l.lineIndex === 0 && !l.error);
+
+                  if (paragraphLine) {
+                    // Calculate based on paragraph position and line index
+                    const estimatedTop = paragraphLine.top + (line.lineIndex * lineHeight);
+                    if (DEBUG_APP) console.warn(`[Gutter Position] Using paragraph-based estimation for line ${i} (index ${line.lineIndex}).`);
+                    newGutterData.push({ ...line, top: estimatedTop, error: true });
+                  } else {
+                    // Fall back to previous line
+                    const estimatedTop = previousLine
+                      ? previousLine.top + lineHeight
+                      : i * lineHeight;
+                    if (DEBUG_APP) console.warn(`[Gutter Position] Could not find DOM node for pos ${nodePos}. Using estimated position.`);
+                    newGutterData.push({ ...line, top: estimatedTop, error: true });
+                  }
+                } else {
+                  // Standard fallback
+                  const estimatedTop = previousLine
+                    ? previousLine.top + lineHeight
+                    : i * lineHeight;
+                  if (DEBUG_APP) console.warn(`[Gutter Position] Could not find DOM node for pos ${nodePos}. Using estimated position.`);
+                  newGutterData.push({ ...line, top: estimatedTop, error: true });
+                }
+
                 foundGutterError = true;
               }
             } catch (error) {
@@ -288,6 +472,7 @@ function App() {
 
         // Start processing the first batch
         processBatch(0);
+        }, 50); // 50ms delay to ensure DOM is updated
       } catch (error) {
         console.error("[Gutter Position] Unexpected error:", error);
         setGutterErrors(true);
@@ -338,7 +523,47 @@ function App() {
        <p className="hinweis">
          Dein Assistent für Songtexte. Silben und Zeilenzahlen helfen dir, den perfekten Rhythmus zu finden.
        </p>
-       {DEBUG_APP && <p style={{color: 'orange', textAlign: 'center'}}><b>[Debug-Modus Aktiv]</b> - Überprüfen Sie die Browser-Konsole für Details.</p>}
+       {debugMode && (
+         <div style={{marginBottom: '10px'}}>
+           <p style={{color: 'orange', textAlign: 'center', marginBottom: '5px'}}>
+             <b>[Debug-Modus Aktiv]</b> - Überprüfen Sie die Browser-Konsole für Details.
+           </p>
+           <div style={{display: 'flex', justifyContent: 'center', gap: '10px'}}>
+             <button
+               onClick={() => {
+                 // Toggle debug CSS for paragraphs
+                 const styleSheet = document.styleSheets[0];
+                 const paragraphRule = Array.from(styleSheet.cssRules).find(rule =>
+                   rule.selectorText === '.paragraph-node' && rule.style.border === '');
+                 if (paragraphRule) {
+                   paragraphRule.style.border = '1px dashed rgba(0, 0, 255, 0.2)';
+                   paragraphRule.style.margin = '2px 0';
+                   paragraphRule.style.padding = '2px';
+                 } else {
+                   // If not found, add a new rule
+                   styleSheet.insertRule('.paragraph-node { border: 1px dashed rgba(0, 0, 255, 0.2); margin: 2px 0; padding: 2px; }', 0);
+                 }
+               }}
+               style={{padding: '3px 8px', fontSize: '12px'}}
+             >
+               Zeige Absätze
+             </button>
+             <button
+               onClick={() => {
+                 // Toggle debug mode
+                 const newDebugMode = !debugMode;
+                 setDebugMode(newDebugMode);
+                 DEBUG_APP = newDebugMode;
+                 // Force reprocess text
+                 processText();
+               }}
+               style={{padding: '3px 8px', fontSize: '12px'}}
+             >
+               Debug {debugMode ? 'Aus' : 'An'}
+             </button>
+           </div>
+         </div>
+       )}
        {processingErrors.length > 0 && (
          <div className="error-message" role="alert">
            Warnung: Konnte Silben für folgende Wörter nicht verarbeiten: {processingErrors.slice(0, 5).join(', ')}{processingErrors.length > 5 ? '...' : ''}

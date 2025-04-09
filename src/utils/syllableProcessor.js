@@ -175,31 +175,120 @@ export const processTextLogic = async (
     if (DEBUG_MODE) console.log(`[ProcessTextLogic Run ${timestamp}] Pass 1 finished. Cache size: ${wordCache.size}, Decoration points: ${newDecorationPoints.length}, Hyphenation errors: ${failedWords.length}, Point errors: ${pointErrors}`);
 
 
-    // --- Pass 2: Calculate paragraph syllable counts ---
+    // --- Pass 2: Calculate line syllable counts (for paragraphs with hard breaks) ---
+    const lineNodes = [];
+
+    // First, find all paragraphs
     doc.descendants((node, pos) => {
         if (node.type.name === 'paragraph') {
-            let paragraphSyllableCount = 0;
-            const paragraphNodePos = pos;
+            // We'll process this paragraph to find lines separated by hard breaks
+            const lines = [];
+            let currentLine = { content: [], startPos: pos + 1, endPos: null };
+            let currentPos = pos + 1; // Start position inside the paragraph
 
-            // Iterate through actual words more reliably
-            node.forEach(childNode => {
-                if(childNode.isText && childNode.text) {
-                    // Match words within this text node
-                     const words = childNode.text.match(/\b\w+\b/g) || []; // Use \w+ to match word characters
-                     words.forEach(word => {
-                         if(word.length >= 3) { // Check length again for consistency
-                            const cachedResult = wordCache.get(word);
-                            paragraphSyllableCount += cachedResult ? cachedResult.count : 1;
-                         } else if (word.length > 0) {
-                             paragraphSyllableCount += 1; // Count short words as 1 syllable
-                         }
-                    });
-                }
+            // Improved tracking of text and break nodes
+            const childNodes = [];
+            node.forEach((childNode) => {
+                childNodes.push(childNode);
             });
 
-            newLineCounts.push({ nodePos: paragraphNodePos + 1, count: paragraphSyllableCount });
+            // Iterate through content to find hard breaks and text nodes
+            for (let i = 0; i < childNodes.length; i++) {
+                const childNode = childNodes[i];
+
+                if (childNode.type && childNode.type.name === 'hardBreak') {
+                    // End of line - finalize current line
+                    currentLine.endPos = currentPos;
+
+                    // Always add the line, even if it's empty
+                    // This ensures we have the correct number of lines
+                    lines.push(currentLine);
+
+                    // Start a new line after the hard break
+                    currentPos += childNode.nodeSize;
+                    currentLine = { content: [], startPos: currentPos, endPos: null };
+                } else if (childNode.isText) {
+                    // Add text node to current line
+                    currentLine.content.push(childNode);
+                    currentPos += childNode.nodeSize;
+                } else {
+                    // Handle other inline nodes (if any)
+                    currentPos += childNode.nodeSize;
+                }
+            }
+
+            // Add the last line if it has content or if no lines have been added yet
+            if (currentLine.content.length > 0 || lines.length === 0) {
+                currentLine.endPos = currentPos;
+                lines.push(currentLine);
+            }
+
+            // If no lines with hard breaks were found, treat the whole paragraph as one line
+            if (lines.length === 0 && node.textContent) {
+                lines.push({
+                    content: node.content.content.filter(n => n.isText),
+                    startPos: pos + 1,
+                    endPos: pos + node.nodeSize - 1
+                });
+            }
+
+            // Add all lines from this paragraph with improved metadata
+            lineNodes.push(...lines.map((line, lineIndex) => ({
+                ...line,
+                type: 'line',
+                paragraphPos: pos,
+                lineIndex: lineIndex,
+                totalLines: lines.length,  // Add total lines in paragraph for better positioning
+                paragraphNodeSize: node.nodeSize  // Add paragraph size for better positioning
+            })));
+
+            if (DEBUG_MODE && lines.length > 1) {
+                console.log(`[ProcessTextLogic] Paragraph at pos ${pos} has ${lines.length} lines`);
+            }
         }
+        // Also handle other block nodes if needed in the future
+        // else if (node.type.name === 'heading') { ... }
     });
+
+    if (DEBUG_MODE) {
+        console.log(`[ProcessTextLogic Run ${timestamp}] Found ${lineNodes.length} lines to count syllables for.`);
+        console.log('[ProcessTextLogic] Line nodes:', lineNodes);
+    }
+
+    // Process each line to count syllables
+    lineNodes.forEach(line => {
+        let lineSyllableCount = 0;
+
+        // Process all text nodes in this line
+        line.content.forEach(textNode => {
+            if (textNode.isText && textNode.text) {
+                // Match words within this text node
+                const words = textNode.text.match(/\b\w+\b/g) || [];
+                words.forEach(word => {
+                    if (word.length >= 3) {
+                        const cachedResult = wordCache.get(word);
+                        lineSyllableCount += cachedResult ? cachedResult.count : 1;
+                    } else if (word.length > 0) {
+                        lineSyllableCount += 1; // Count short words as 1 syllable
+                    }
+                });
+            }
+        });
+
+        // Add this line's count to the results with all metadata
+        newLineCounts.push({
+            nodePos: line.startPos,
+            count: lineSyllableCount,
+            type: 'line',
+            paragraphPos: line.paragraphPos,
+            lineIndex: line.lineIndex,
+            totalLines: line.totalLines || 1,
+            paragraphNodeSize: line.paragraphNodeSize || 0
+        });
+    });
+
+    // Sort line counts by position to ensure they're in document order
+    newLineCounts.sort((a, b) => a.nodePos - b.nodePos);
     if (DEBUG_MODE) console.log(`[ProcessTextLogic Run ${timestamp}] Pass 2 finished. Calculated counts for ${newLineCounts.length} paragraphs.`);
 
 
