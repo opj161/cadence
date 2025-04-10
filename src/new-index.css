@@ -1,0 +1,147 @@
+:root {
+  --gutter-width: 40px;
+  --editor-padding: 20px;
+}
+
+/* --- Main Layout --- */
+.app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.editor-container {
+  position: relative;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.editor {
+  padding: var(--editor-padding);
+  padding-left: calc(var(--gutter-width) + var(--editor-padding));
+  min-height: 300px;
+}
+
+.ProseMirror {
+  outline: none;
+  line-height: 1.5;
+}
+
+.ProseMirror p {
+  margin: 0;
+  padding: 0;
+}
+
+/* --- Gutter Styling --- */
+.syllable-gutter-item {
+  position: absolute;
+  left: 0;
+  width: var(--gutter-width);
+  text-align: center;
+  color: #666;
+  font-size: 0.8rem;
+  padding: 2px 4px;
+  background-color: #f5f5f5;
+  border-right: 1px solid #ddd;
+  user-select: none;
+}
+
+/* --- Debug Panel --- */
+.debug-panel {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  font-family: monospace;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.debug-panel h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.debug-panel-content {
+  font-size: 0.8rem;
+}
+
+/* --- Button Styling --- */
+button {
+  padding: 6px 12px;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+button:hover {
+  background-color: #3a80d2;
+}
+
+button:active {
+  background-color: #2a70c2;
+}
+
+button.secondary {
+  background-color: #6c757d;
+}
+
+button.secondary:hover {
+  background-color: #5c656d;
+}
+
+button.secondary:active {
+  background-color: #4c555d;
+}
+
+button.debug {
+  background-color: #28a745;
+}
+
+button.debug:hover {
+  background-color: #218838;
+}
+
+button.debug:active {
+  background-color: #1e7e34;
+}
+
+/* Hard break styling */
+.hard-break {
+  display: block;
+  height: 1.5em;
+}
+
+/* Debug visualization for paragraphs and breaks */
+.debug-mode .ProseMirror p {
+  border: 1px dashed rgba(0, 0, 255, 0.2);
+  margin: 2px 0;
+  padding: 2px;
+}
+
+.debug-mode .ProseMirror p:empty {
+  min-height: 1em;
+  border: 1px dashed rgba(255, 0, 0, 0.2);
+}
+
+.debug-mode .hard-break::after {
+  content: '\\u21b5';
+  color: rgba(255, 0, 0, 0.5);
+  font-size: 0.8em;
+  vertical-align: super;
+}
