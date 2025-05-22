@@ -48,7 +48,7 @@ export const processTextLogic = async (
 
 
     for (const { node, pos } of textNodes) {
-        const nodeStartPos = pos + 1; // Position inside the text node
+        const nodeStartPos = pos; // Position inside the text node
         let currentWordStartIndex = 0;
         // Split by spaces AND punctuation attached to words for better word identification
         const segments = node.text.split(/(\s+|[.,!?;:]+(?=\s|$))/);
