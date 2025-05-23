@@ -66,44 +66,64 @@ export const SyllableVisualizer = Extension.create({
             apply: (tr, currentPluginState, oldEditorState, newEditorState) => {
                 const meta = tr.getMeta(SyllableVisualizerPluginKey);
                 let newState = { ...currentPluginState }; // Clone state
-                let needsHyphenUpdate = false;
+                let pointsToUse = newState.hyphenPoints;
+                let decorationsNeedRecalculation = false;
+                let pointsChangedViaMeta = false;
 
-                 // Check if points were passed via metadata
+                // Check if new points were passed via metadata
                 if (meta && meta.points !== undefined) {
                     if (DEBUG_SYLLABLE_VISUALIZER) console.log(`[SyllableVisualizer Plugin] Apply: Received ${meta.points.length} points via meta.`);
-                     // Basic check if points actually changed to avoid unnecessary updates
-                     if (JSON.stringify(meta.points) !== JSON.stringify(newState.hyphenPoints)) {
-                         newState.hyphenPoints = meta.points;
-                         needsHyphenUpdate = true;
-                     }
+                    // Basic check if points actually changed to avoid unnecessary updates
+                    if (JSON.stringify(meta.points) !== JSON.stringify(newState.hyphenPoints)) {
+                        pointsToUse = meta.points;
+                        decorationsNeedRecalculation = true;
+                        pointsChangedViaMeta = true;
+                    }
                 } else if (tr.docChanged) {
-                    // If doc changed but no new points, map existing decorations
-                    if (DEBUG_SYLLABLE_VISUALIZER) console.log('[SyllableVisualizer Plugin] Apply: Document changed, mapping old hyphen decorations.');
-                    newState.hyphenDecorations = currentPluginState.hyphenDecorations.map(tr.mapping, newEditorState.doc);
-                    // Also map the stored points if needed for comparison later
-                    newState.hyphenPoints = currentPluginState.hyphenPoints
+                    // If doc changed and no new points via meta, map existing points
+                    if (DEBUG_SYLLABLE_VISUALIZER) console.log('[SyllableVisualizer Plugin] Apply: Document changed, mapping old hyphen points.');
+                    pointsToUse = currentPluginState.hyphenPoints
                         .map(point => ({ ...point, pos: tr.mapping.map(point.pos) }))
-                        .filter(point => point.pos <= newEditorState.doc.content.size); // Filter out points outside the new doc
+                        // Filter out points that are no longer valid in the new document
+                        .filter(point => point.pos > 0 && point.pos <= newEditorState.doc.content.size);
+                    decorationsNeedRecalculation = true; // Always recalculate if doc changed
                 }
 
+                newState.hyphenPoints = pointsToUse;
 
-                // If new points were received, recalculate decorations
-                if (needsHyphenUpdate) {
-                     if (DEBUG_SYLLABLE_VISUALIZER) console.log(`[SyllableVisualizer Plugin] Apply: Recalculating decorations for ${newState.hyphenPoints.length} points.`);
+                // If new points were received or doc changed, recalculate decorations
+                if (decorationsNeedRecalculation) {
+                    if (DEBUG_SYLLABLE_VISUALIZER) console.log(`[SyllableVisualizer Plugin] Apply: Recalculating decorations for ${newState.hyphenPoints.length} points. Doc version: ${newEditorState.doc.version}`);
                     newState.hyphenDecorations = createHyphenDecorations(newEditorState.doc, newState.hyphenPoints);
                 }
+                // This case is mostly a fallback, the above should handle docChanged leading to recalculation.
+                // else if (tr.docChanged && !meta) {
+                //    // If only docChanged and no meta, map the old DecorationSet directly.
+                //    // This might be less accurate if structural changes occurred.
+                //    if (DEBUG_SYLLABLE_VISUALIZER) console.log('[SyllableVisualizer Plugin] Apply: Document changed, no meta, mapping old decoration set.');
+                //    newState.hyphenDecorations = currentPluginState.hyphenDecorations.map(tr.mapping, newEditorState.doc);
+                // }
 
-                 // Always update doc version
+
+                // Always update doc version
                 newState.docVersion = newEditorState.doc.version;
 
-                // Only return newState if something actually changed to avoid unnecessary re-renders
-                if (needsHyphenUpdate || tr.docChanged || newState.docVersion !== currentPluginState.docVersion) {
+                // Determine if the state actually changed
+                const significantChange = decorationsNeedRecalculation || // Decorations were recomputed
+                                          pointsChangedViaMeta || // Points explicitly changed
+                                          (tr.docChanged && !meta); // Document changed without new points (covered by recalc)
+
+
+                if (significantChange || newState.docVersion !== currentPluginState.docVersion) {
+                    if (DEBUG_SYLLABLE_VISUALIZER && !significantChange && newState.docVersion !== currentPluginState.docVersion) {
+                        console.log('[SyllableVisualizer Plugin] Apply: Returning new state due to docVersion change only.');
+                    }
                     return newState;
                 }
 
-                // If nothing changed relevant to this plugin, return the old state
+                // If nothing relevant changed, return the old state
+                if (DEBUG_SYLLABLE_VISUALIZER) console.log('[SyllableVisualizer Plugin] Apply: No significant changes, returning current plugin state.');
                 return currentPluginState;
-
             }
         },
         props: {

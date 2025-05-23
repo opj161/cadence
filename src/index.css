@@ -86,9 +86,9 @@
   }
   
   .app-logo {
-    height: 50px;
+    height: 350px;
     width: auto;
-    margin-bottom: 15px;
+    margin-bottom: 0px;
   }
   
   h1 {
@@ -104,7 +104,7 @@
     text-align: center;
     font-size: 0.9em;
     color: var(--text-secondary);
-    margin-top: 8px;
+    margin-top: 0px;
     margin-bottom: 40px;
     max-width: 550px;
     margin-left: auto;

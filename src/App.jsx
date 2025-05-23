@@ -10,7 +10,7 @@ import { LyricStructure } from './LyricStructure';
 import { processTextLogic } from './utils/syllableProcessor';
 import debounce from 'lodash.debounce';
 
-const DEBUG_APP = true; // Enable debug logging
+const DEBUG_APP = false; // Enable debug logging
 
 function App() {
   const [lineCounts, setLineCounts] = useState([]);
@@ -40,7 +40,7 @@ function App() {
     );
   }, [setLineCounts, setIsProcessing, setProcessingErrors]);
 
-  const debouncedProcessText = useRef(debounce(processText, 500)).current;
+  const debouncedProcessText = useRef(debounce(processText, 800)).current; // Increased debounce delay
 
   // --- handleSelectionUpdate remains the same ---
   const handleSelectionUpdate = useCallback(({ editor: updatedEditor }) => {
@@ -305,10 +305,6 @@ The end.`, // Example content
     <div className="app-container">
       <div className="app-header">
         <img src="/cadence.svg" alt="Cadence Logo" className="app-logo" />
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <h1>Cadence</h1>
-          {isProcessing && <span className="processing-indicator" aria-label="Verarbeite...">⚙️</span>}
-        </div>
       </div>
       <p className="hinweis">
         Dein Assistent für Songtexte. Silben und Zeilenzahlen helfen dir, den perfekten Rhythmus zu finden.
