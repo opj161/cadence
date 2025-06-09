@@ -21,21 +21,10 @@ export const CustomHardBreak = HardBreak.extend({
     return {
       'Mod-Enter': () => this.editor.commands.setHardBreak(),
       'Shift-Enter': () => this.editor.commands.setHardBreak(),
-      'Enter': () => {
-        // If we're at the end of a paragraph, create a new paragraph
-        // Otherwise, insert a hard break
-        const { selection } = this.editor.state;
-        const { $from, empty } = selection;
-        
-        if (empty && $from.parent.type.name === 'paragraph') {
-          const endPos = $from.end();
-          if ($from.pos === endPos - 1) {
-            return this.editor.commands.splitBlock();
-          }
-        }
-        
-        return this.editor.commands.setHardBreak();
-      }
+      // Removed custom 'Enter' handler to allow default paragraph creation.
+      // StarterKit with hardBreak: false should handle 'Enter' for new paragraphs.
     };
   }
 });
+
+[end of src/CustomHardBreak.js]
