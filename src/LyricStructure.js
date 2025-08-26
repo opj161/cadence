@@ -195,7 +195,7 @@ export const LyricStructure = Extension.create({
                                  if (DEBUG_LYRIC_STRUCTURE) console.log('[Spacing Check: appendTransaction] Should insert condition met:', shouldInsert);
 
                                 if (shouldInsert) {
-                                    const emptyPara = currentDoc.type.schema.nodes.paragraph.createAndFill(); // Use currentDoc's schema
+                                    const emptyPara = currentDoc.type.schema.nodes.cadenceParagraph.createAndFill(); // Use currentDoc's schema
                                     if (emptyPara) {
                                         // Lazily create the spacing transaction only if needed
                                         if (!spacingTr) {
