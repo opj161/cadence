@@ -119,19 +119,21 @@
   /* The wrapper is now created by the Node View for each paragraph */
   .cadence-paragraph-wrapper {
     position: relative;
+    position: relative; /* This is crucial for positioning the child gutter span */
   }
   
   /* Editor Content Wrapper */
   .editor-content-wrapper {
     flex-grow: 1;
-    background-color: var(--bg-editor);
     border: 1px solid var(--border-color);
     border-radius: 10px;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
     /* Ensure content scrolls if it overflows */
     overflow-y: auto;
-    /* Potentially set a max-height if needed, or rely on ProseMirror's min-height */
-    /* max-height: 70vh; */
+    /* Ensure content scrolls if it overflows */
+    overflow-y: auto;
+    /* Add padding on the left to create the "gutter area" */
+    padding-left: 55px;
+    position: relative; /* Context for positioning */
   }
   
   /* ==========================================================================
@@ -140,6 +142,8 @@
   
   .ProseMirror {
     padding: 15px 25px;
+    /* Add padding on the left to create the "gutter area" */
+    padding-left: 55px;
     min-height: 350px;
     outline: none;
     line-height: 1.65; /* Match body/gutter line-height */
@@ -156,41 +160,25 @@
   
   /* --- PARAGRAPH SPACING FIXES --- */
   
-  /* Default Paragraph Spacing - Add space BELOW paragraphs */
-  .ProseMirror p {
-    margin-top: 0; /* Reset any top margin from defaults or injectCSS */
+  /* Target the wrapper for margin, not the <p> tag inside,
+     so the gutter moves with the paragraph's spacing. */
+  .ProseMirror .cadence-paragraph-wrapper {
     margin-bottom: 1em;
-    position: relative;
   }
-  
-  /* Alternative to p:has(+ p:empty) without using :has() selector
-     Use JavaScript to add a custom class to paragraphs before empty ones */
-  .ProseMirror p.before-empty-paragraph {
-    margin-bottom: 0;
+
+  /* Target the inner paragraph for styles */
+  /* Target the inner paragraph for styles */
+  .ProseMirror .paragraph-node {
+    margin: 0;
+    padding: 0;
+    margin-bottom: 1em; /* Add space below paragraphs */
   }
 
   /* Adjust empty paragraph spacing to be more compact */
-  .ProseMirror p:empty {
+  .ProseMirror .paragraph-node:empty {
     margin: 0;
     padding: 0;
-    height: 0.5em;
-    min-height: 0.5em;
-  }
-
-  /* Remove bottom margin from the very last paragraph */
-  .ProseMirror p:last-child {
-    margin-bottom: 0;
-  }
-
-  /* Ensure consistent header spacing */
-  .ProseMirror p.lyric-header {
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
-  }
-
-  /* Special case: headers immediately after empty paragraphs */
-  .ProseMirror p:empty + p.lyric-header {
-    margin-top: 0;
+    min-height: 1.65em; /* Match line-height to prevent jumping */
   }
 
   /* --- END PARAGRAPH SPACING FIXES --- */
@@ -218,32 +206,27 @@
   /* This class is now applied to the span created by the Node View */
   .gutter-line-count {
     position: absolute;
-    left: -50px; /* Position it outside the editor content area */
-    top: 0; /* Align with the top of the paragraph */
-    width: 45px;
+    left: -55px; /* Position it in the padding of the parent wrapper */
+    top: 0;      /* Align with the top of the paragraph wrapper */
+    width: 40px; /* Adjust width as needed */
     text-align: center;
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
     font-size: 11px;
     color: var(--text-secondary);
     opacity: 0.6;
     user-select: none;
-    line-height: 1.65;
-    transition: opacity 0.2s ease, color 0.2s ease, font-weight 0.2s ease;
+    line-height: 1.65; /* Match editor line-height for alignment */
+    transition: opacity 0.2s ease, color 0.2s ease, font-weight 0.2s ease, transform 0.1s ease;
     padding-top: 15px; /* Align with paragraph padding */
     box-sizing: border-box;
   }
   
-  .gutter-line-count.active-count {
+  /* Style the gutter count when the parent wrapper is active */
+  .cadence-paragraph-wrapper.is-active .gutter-line-count {
     color: var(--gutter-active-color);
     font-weight: 600;
     opacity: 1;
     transform: scale(1.1);
-  }
-  
-  .gutter-line-count.error-count {
-    color: var(--warning-color);
-    font-weight: bold;
-    opacity: 0.8;
   }
   
   /* ==========================================================================
@@ -271,48 +254,38 @@
      ========================================================================== */
   
   /* Header Styling ([Verse 1], [Hook], etc.) */
-  .ProseMirror p.lyric-header,
-  .ProseMirror .lyric-header > p /* Handle potential nesting */
+  /* Header Styling ([Verse 1], [Hook], etc.) - Now targets the wrapper div */
+  .ProseMirror .lyric-header
   {
     font-weight: bold;
     color: var(--text-accent);
     /* Adjust spacing: provide consistent space unless preceded by empty line */
     margin-top: 0.75em; /* Default top spacing */
     margin-bottom: 0.5em; /* Space below headers */
-    margin-left: 0 !important;
   }
   
   /* Remove top margin ONLY if preceded by an empty paragraph */
-  .ProseMirror p:empty + p.lyric-header {
+  .ProseMirror .cadence-paragraph-wrapper:has(.paragraph-node:empty) + .lyric-header {
     margin-top: 0;
   }
   
   /* Chord Styling ([G], [Am], etc.) */
   .ProseMirror .lyric-chord {
     color: var(--text-accent-hover);
-    font-weight: 500;
+    font-weight: 600;
     font-family: 'Courier New', Courier, monospace;
-    background-color: rgba(var(--shadow-color-rgb, 0, 0, 0), 0.05); /* More neutral background */
+    background-color: var(--border-color-subtle);
     padding: 0.05em 0.2em;
     border-radius: 3px;
     font-size: 0.9em;
-    /* Ensure chords don't prevent line breaking */
-    word-break: keep-all; /* Try to keep chord together */
     white-space: nowrap; /* Prevent breaking inside the chord */
   }
   
-  /* Comment Styling (# This is a comment) */
-  .ProseMirror p.lyric-comment {
+  /* Comment Styling (# This is a comment) - Now targets the wrapper div */
+  .ProseMirror .lyric-comment {
     color: var(--text-secondary);
     font-style: italic;
     opacity: 0.75;
-    margin-left: 0 !important;
-    /* Restore default paragraph margin, unless followed by empty */
-    margin-bottom: 1em;
-  }
-  
-  .ProseMirror p.lyric-comment:has(+ p:empty) {
-    margin-bottom: 0;
   }
   
   
@@ -405,15 +378,18 @@
     h1 { font-size: 1.6rem; }
     .hinweis { font-size: 0.85em; margin-bottom: 25px;}
   
+    .editor-content-wrapper {
+      padding-left: 40px; /* Reduce gutter space on mobile */
+      border-radius: 6px;
+    }
+  
     .gutter-line-count {
       left: -40px;
       font-size: 10px;
+      width: 35px;
     }
     .ProseMirror {
       padding: 10px 15px;
       min-height: 40vh;
-    }
-    .editor-content-wrapper {
-      border-radius: 6px;
     }
   }
